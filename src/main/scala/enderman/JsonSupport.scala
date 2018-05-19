@@ -2,7 +2,7 @@ package enderman
 
 import java.util.Date
 
-import enderman.models.{Business, Duration}
+import enderman.models.{Business, Duration, Location}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.bson.types.ObjectId
 import spray.json._
@@ -32,8 +32,8 @@ trait JsonSupport extends SprayJsonSupport {
       )
 
       duration.userId match {
-        case Some(userId) => JsObject(obj.fields.updated("userId", JsString(userId)));
-        case _ => obj;
+        case Some(userId) => JsObject(obj.fields + ("userId" -> JsString(userId)));
+        case None => obj;
       }
     }
 
@@ -47,6 +47,38 @@ trait JsonSupport extends SprayJsonSupport {
         fields("sessionId").convertTo[String],
         fields.get("userId").map(_.convertTo[String]),
         fields("actionType").convertTo[Int],
+        fields("date").convertTo[Date]
+      )
+    }
+
+  }
+
+  implicit object locationJsonFormat extends RootJsonFormat[Location] {
+
+    def write(location: Location) = {
+      val obj = JsObject(
+        "_id" -> location._id.toString.toJson,
+        "url" -> location.url.toJson,
+        "sessionId" -> location.url.toJson,
+        "date" -> location.date.toJson
+      )
+
+      location.userId match {
+        case Some(userId) => JsObject(obj.fields + ("userId" -> JsString(userId)));
+        case None => obj;
+      }
+    }
+
+    def read(value: JsValue) = {
+      val fields = value.asJsObject.fields
+      Location(
+        fields.get("_id") match {
+          case Some(id) => new ObjectId(id.convertTo[String]);
+          case None => new ObjectId();
+        },
+        fields("url").convertTo[String],
+        fields("sessionId").convertTo[String],
+        fields.get("userId").map(_.convertTo[String]),
         fields("date").convertTo[Date]
       )
     }

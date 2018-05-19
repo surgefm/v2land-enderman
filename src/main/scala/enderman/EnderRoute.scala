@@ -48,6 +48,7 @@ trait EnderRoute extends JsonSupport {
     }
 
   def durationRepo: repository.DurationRepository
+  def locationRepo: repository.LocationRepository
 
   lazy val enderRoutes: Route =
     pathPrefix("v2land") {
@@ -74,9 +75,20 @@ trait EnderRoute extends JsonSupport {
           },
           path("location") {
             get {
-              parameters("url", "userId".?) {
-                (url, userIdOpt) =>
-                  complete(sessionId)
+              parameters("url", "userId".?) { (url, userIdOpt) =>
+                val location = models.Location(
+                  new ObjectId(),
+                  url,
+                  sessionId,
+                  userIdOpt,
+                  new Date())
+                onComplete(locationRepo.insertOne(location)) {
+                  case Success(_) => complete("")
+                  case Failure(e) => {
+                    e.printStackTrace()
+                    complete(StatusCodes.BadRequest)
+                  }
+                }
               }
             }
           },

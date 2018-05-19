@@ -2,7 +2,6 @@ package enderman.models.repository
 
 import enderman.models.Duration
 import org.mongodb.scala.MongoCollection
-import org.mongodb.scala.bson.collection.immutable.Document
 
 import scala.concurrent.{ ExecutionContext, Future }
 
