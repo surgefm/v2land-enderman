@@ -49,6 +49,7 @@ trait EnderRoute extends JsonSupport {
 
   def durationRepo: repository.DurationRepository
   def locationRepo: repository.LocationRepository
+  def businessRepo: repository.BusinessRepository
 
   lazy val enderRoutes: Route =
     pathPrefix("v2land") {
@@ -92,11 +93,18 @@ trait EnderRoute extends JsonSupport {
               }
             }
           },
-          path(Segment) { eventName =>
-            concat(
-              post {
-                complete(sessionId)
-              })
+          path("business") {
+            post {
+              entity(as[models.Business]) { business =>
+                onComplete(businessRepo.insertOne(business)) {
+                  case Success(_) => complete("")
+                  case Failure(e) => {
+                    e.printStackTrace()
+                    complete(StatusCodes.BadRequest)
+                  }
+                }
+              }
+            }
           })
 
       }

@@ -88,17 +88,28 @@ trait JsonSupport extends SprayJsonSupport {
 
   implicit object businessJsonFormat extends RootJsonFormat[Business] {
 
-    def write(business: Business) =
-      JsObject(
+    def write(business: Business) = {
+      val obj = JsObject(
+        "_id" -> business._id.toString.toJson,
         "action" -> JsString(business.action),
         "meta" -> business.meta.parseJson,
         "sessionId" -> JsString(business.sessionId),
         "date" -> dateJsonFormat.write(business.date),
       )
 
+      business.userId match {
+        case Some(userId) => JsObject(obj.fields + ("userId" -> JsString(userId)));
+        case None => obj;
+      }
+    }
+
     def read(value: JsValue) =  {
       val fields = value.asJsObject.fields
       Business(
+        fields.get("_id") match {
+          case Some(id) => new ObjectId(id.convertTo[String]);
+          case None => new ObjectId();
+        },
         fields("action").convertTo[String],
         fields("meta").asJsObject("meta field should be object").convertTo[String],
         fields("sessionId").convertTo[String],
