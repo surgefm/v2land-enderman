@@ -5,6 +5,7 @@ lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
       organization    := "org.langchao",
+      version := "0.1.0",
       scalaVersion    := "2.12.5"
     )),
     name := "Enderman",
@@ -21,3 +22,11 @@ lazy val root = (project in file(".")).
       "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test
     )
   )
+
+enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
+enablePlugins(AshScriptPlugin)
+
+mainClass in Compile := Some("enderman.QuickstartServer")
+
+dockerBaseImage       := "openjdk:jre-alpine"

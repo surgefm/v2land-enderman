@@ -2,12 +2,12 @@ package enderman
 
 import java.util.Date
 
-import akka.actor.{ ActorSystem }
+import akka.actor.ActorSystem
 import akka.event.Logging
 
 import scala.concurrent.duration._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ Directive1, Route }
+import akka.http.scaladsl.server.{ Directive0, Directive1, Route }
 import akka.http.scaladsl.server.directives.MethodDirectives.get
 import akka.http.scaladsl.server.directives.MethodDirectives.post
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
@@ -16,7 +16,7 @@ import enderman.models.repository
 import akka.util.Timeout
 import java.util.UUID.randomUUID
 
-import akka.http.scaladsl.model.{ StatusCodes }
+import akka.http.scaladsl.model.StatusCodes
 
 import scala.util.{ Failure, Success }
 import akka.http.scaladsl.model.headers.{ HttpCookie, HttpCookiePair }
@@ -37,7 +37,7 @@ trait EnderRoute extends JsonSupport {
 
   // check the existence sessionId
   // generate new sessionId if not exist
-  val sessionDirective: Directive1[String] =
+  private val sessionDirective: Directive1[String] =
     optionalSessionCookieDirective.flatMap {
       case Some(cookie) => provide(cookie.value);
       case None => {
@@ -47,66 +47,78 @@ trait EnderRoute extends JsonSupport {
       };
     }
 
+  private val originHeaderDirective: Directive0 =
+    headerValueByName("Origin").flatMap { value =>
+      if (value == "https://langchao.org") {
+        pass
+      } else {
+        log.error("not a request from langchao.org")
+        reject
+      }
+    }
+
   def durationRepo: repository.DurationRepository
   def locationRepo: repository.LocationRepository
   def businessRepo: repository.BusinessRepository
 
   lazy val enderRoutes: Route =
     pathPrefix("v2land") {
-      sessionDirective { sessionId =>
-        concat(
-          path("duration") {
-            get {
-              parameters("userId".?, "actionType".as[Int]) { (userIdOpt, actionType) =>
-                val duration = models.Duration(
-                  new ObjectId(),
-                  sessionId,
-                  userIdOpt,
-                  actionType,
-                  new Date())
-                onComplete(durationRepo.insertOne(duration)) {
-                  case Success(_) => complete("")
-                  case Failure(e) => {
-                    e.printStackTrace()
-                    complete(StatusCodes.BadRequest)
+      originHeaderDirective {
+        sessionDirective { sessionId =>
+          concat(
+            path("duration") {
+              get {
+                parameters("userId".?, "actionType".as[Int]) { (userIdOpt, actionType) =>
+                  val duration = models.Duration(
+                    new ObjectId(),
+                    sessionId,
+                    userIdOpt,
+                    actionType,
+                    new Date())
+                  onComplete(durationRepo.insertOne(duration)) {
+                    case Success(_) => complete("")
+                    case Failure(e) => {
+                      e.printStackTrace()
+                      complete(StatusCodes.BadRequest)
+                    }
                   }
                 }
               }
-            }
-          },
-          path("location") {
-            get {
-              parameters("url", "userId".?) { (url, userIdOpt) =>
-                val location = models.Location(
-                  new ObjectId(),
-                  url,
-                  sessionId,
-                  userIdOpt,
-                  new Date())
-                onComplete(locationRepo.insertOne(location)) {
-                  case Success(_) => complete("")
-                  case Failure(e) => {
-                    e.printStackTrace()
-                    complete(StatusCodes.BadRequest)
+            },
+            path("location") {
+              get {
+                parameters("url", "userId".?) { (url, userIdOpt) =>
+                  val location = models.Location(
+                    new ObjectId(),
+                    url,
+                    sessionId,
+                    userIdOpt,
+                    new Date())
+                  onComplete(locationRepo.insertOne(location)) {
+                    case Success(_) => complete("")
+                    case Failure(e) => {
+                      e.printStackTrace()
+                      complete(StatusCodes.BadRequest)
+                    }
                   }
                 }
               }
-            }
-          },
-          path("business") {
-            post {
-              entity(as[models.Business]) { business =>
-                onComplete(businessRepo.insertOne(business)) {
-                  case Success(_) => complete("")
-                  case Failure(e) => {
-                    e.printStackTrace()
-                    complete(StatusCodes.BadRequest)
+            },
+            path("business") {
+              post {
+                entity(as[models.Business]) { business =>
+                  onComplete(businessRepo.insertOne(business)) {
+                    case Success(_) => complete("")
+                    case Failure(e) => {
+                      e.printStackTrace()
+                      complete(StatusCodes.BadRequest)
+                    }
                   }
                 }
               }
-            }
-          })
+            })
 
+        }
       }
     }
 
