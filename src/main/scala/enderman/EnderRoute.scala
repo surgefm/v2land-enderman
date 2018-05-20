@@ -64,64 +64,67 @@ trait EnderRoute extends JsonSupport with Config {
   def businessRepo: repository.BusinessRepository
 
   lazy val enderRoutes: Route =
-    pathPrefix("v2land") {
-      originHeaderDirective {
-        sessionDirective { sessionId =>
-          concat(
-            path("duration") {
-              get {
-                parameters("userId".?, "actionType".as[Int]) { (userIdOpt, actionType) =>
-                  val duration = models.Duration(
-                    new ObjectId(),
-                    sessionId,
-                    userIdOpt,
-                    actionType,
-                    new Date())
-                  onComplete(durationRepo.insertOne(duration)) {
-                    case Success(_) => complete("")
-                    case Failure(e) => {
-                      e.printStackTrace()
-                      complete(StatusCodes.BadRequest)
+    path("") {
+      complete("God's in his heaven.")
+    } ~
+      pathPrefix("v2land") {
+        originHeaderDirective {
+          sessionDirective { sessionId =>
+            concat(
+              path("duration") {
+                get {
+                  parameters("userId".?, "actionType".as[Int]) { (userIdOpt, actionType) =>
+                    val duration = models.Duration(
+                      new ObjectId(),
+                      sessionId,
+                      userIdOpt,
+                      actionType,
+                      new Date())
+                    onComplete(durationRepo.insertOne(duration)) {
+                      case Success(_) => complete("")
+                      case Failure(e) => {
+                        e.printStackTrace()
+                        complete(StatusCodes.BadRequest)
+                      }
                     }
                   }
                 }
-              }
-            },
-            path("location") {
-              get {
-                parameters("url", "userId".?) { (url, userIdOpt) =>
-                  val location = models.Location(
-                    new ObjectId(),
-                    url,
-                    sessionId,
-                    userIdOpt,
-                    new Date())
-                  onComplete(locationRepo.insertOne(location)) {
-                    case Success(_) => complete("")
-                    case Failure(e) => {
-                      e.printStackTrace()
-                      complete(StatusCodes.BadRequest)
+              },
+              path("location") {
+                get {
+                  parameters("url", "userId".?) { (url, userIdOpt) =>
+                    val location = models.Location(
+                      new ObjectId(),
+                      url,
+                      sessionId,
+                      userIdOpt,
+                      new Date())
+                    onComplete(locationRepo.insertOne(location)) {
+                      case Success(_) => complete("")
+                      case Failure(e) => {
+                        e.printStackTrace()
+                        complete(StatusCodes.BadRequest)
+                      }
                     }
                   }
                 }
-              }
-            },
-            path("business") {
-              post {
-                entity(as[models.Business]) { business =>
-                  onComplete(businessRepo.insertOne(business)) {
-                    case Success(_) => complete("")
-                    case Failure(e) => {
-                      e.printStackTrace()
-                      complete(StatusCodes.BadRequest)
+              },
+              path("business") {
+                post {
+                  entity(as[models.Business]) { business =>
+                    onComplete(businessRepo.insertOne(business)) {
+                      case Success(_) => complete("")
+                      case Failure(e) => {
+                        e.printStackTrace()
+                        complete(StatusCodes.BadRequest)
+                      }
                     }
                   }
                 }
-              }
-            })
+              })
 
+          }
         }
       }
-    }
 
 }
