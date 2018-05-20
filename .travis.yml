@@ -1,5 +1,7 @@
 language: scala
 scala:
-   - 2.12.5
+  - 2.12.5
 script:
-   - sbt -jvm-opts travis/jvmopts.compile docker:publishLocal
+  - sbt -jvm-opts travis/jvmopts.compile docker:publishLocal
+notifications:
+  slack: v2land:xoeT2IXt8yCaUfMxoBbXrSZD
