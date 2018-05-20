@@ -22,7 +22,7 @@ import scala.util.{ Failure, Success }
 import akka.http.scaladsl.model.headers.{ HttpCookie, HttpCookiePair }
 import org.bson.types.ObjectId
 
-trait EnderRoute extends JsonSupport {
+trait EnderRoute extends JsonSupport with Config {
 
   implicit def system: ActorSystem
 
@@ -47,12 +47,14 @@ trait EnderRoute extends JsonSupport {
       };
     }
 
+  private lazy val checkOrigin = config.getString("enderman.trackOrigin")
+
   private val originHeaderDirective: Directive0 =
     headerValueByName("Origin").flatMap { value =>
-      if (value == "https://langchao.org") {
+      if (value == checkOrigin) {
         pass
       } else {
-        log.error("not a request from langchao.org")
+        log.error("not a request from " + checkOrigin)
         reject
       }
     }
