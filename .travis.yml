@@ -1,0 +1,5 @@
+language: scala
+scala:
+   - 2.12.5
+script:
+   - sbt -jvm-opts travis/jvmopts.compile docker:publishLocal
