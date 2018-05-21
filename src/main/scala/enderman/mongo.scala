@@ -4,13 +4,13 @@ import org.bson.codecs.configuration.CodecRegistries._
 import org.mongodb.scala._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
-
-import models.{ Duration, Location, Business }
+import models.{ Business, ClientInfo, Duration, Location }
 
 object mongo extends Config {
 
   lazy val mongoClient = MongoClient(config.getString("mongo.uri"))
   lazy val codecRegistry = fromRegistries(
+    fromProviders(classOf[ClientInfo]),
     fromProviders(classOf[Duration]),
     fromProviders(classOf[Location]),
     fromProviders(classOf[Business]),

@@ -21,18 +21,22 @@ import akka.http.scaladsl.model.StatusCodes
 import scala.util.{ Failure, Success }
 import akka.http.scaladsl.model.headers.{ HttpCookie, HttpCookiePair }
 import org.bson.types.ObjectId
+import spray.json.{ JsArray, JsValue, JsonParser, deserializationError }
+
+import scala.concurrent.{ ExecutionContext, Future }
 
 trait EnderRoute extends JsonSupport with Config {
 
   implicit def system: ActorSystem
+  implicit def ec: ExecutionContext
 
   lazy val log = Logging(system, classOf[EnderRoute])
 
   implicit lazy val timeout = Timeout(5.seconds) // usually we'd obtain the timeout from the system's configuration
 
-  val sessionIdKey = "sessionId"
+  private val sessionIdKey = "sessionId"
 
-  val optionalSessionCookieDirective: Directive1[Option[HttpCookiePair]] =
+  private val optionalSessionCookieDirective: Directive1[Option[HttpCookiePair]] =
     optionalCookie(sessionIdKey)
 
   // check the existence sessionId
@@ -59,6 +63,18 @@ trait EnderRoute extends JsonSupport with Config {
       }
     }
 
+  private val clientInfoDirective: Directive1[models.ClientInfo] =
+    sessionDirective.flatMap { sessionId =>
+      extractClientIP.flatMap { clientIp =>
+        headerValueByName("User-Agent").map { userAgent =>
+          models.ClientInfo(
+            clientIp.toOption.map(_.getHostAddress).getOrElse("unknown"),
+            userAgent,
+            sessionId)
+        }
+      }
+    }
+
   def durationRepo: repository.DurationRepository
   def locationRepo: repository.LocationRepository
   def businessRepo: repository.BusinessRepository
@@ -67,17 +83,15 @@ trait EnderRoute extends JsonSupport with Config {
     concat(
       pathPrefix("v2land") {
         originHeaderDirective {
-          sessionDirective { sessionId =>
+          clientInfoDirective { clientInfo =>
             concat(
               path("duration") {
                 get {
                   parameters("userId".?, "actionType".as[Int]) { (userIdOpt, actionType) =>
                     val duration = models.Duration(
                       new ObjectId(),
-                      sessionId,
-                      userIdOpt,
                       actionType,
-                      new Date())
+                      clientInfo.copy(userId = userIdOpt))
                     onComplete(durationRepo.insertOne(duration)) {
                       case Success(_) => complete("")
                       case Failure(e) => {
@@ -94,9 +108,7 @@ trait EnderRoute extends JsonSupport with Config {
                     val location = models.Location(
                       new ObjectId(),
                       url,
-                      sessionId,
-                      userIdOpt,
-                      new Date())
+                      clientInfo.copy(userId = userIdOpt))
                     onComplete(locationRepo.insertOne(location)) {
                       case Success(_) => complete("")
                       case Failure(e) => {
@@ -119,8 +131,40 @@ trait EnderRoute extends JsonSupport with Config {
                     }
                   }
                 }
+              },
+              path("chunk") {
+                post {
+                  entity(as[String]) { jsonString =>
+                    val jsonAst = JsonParser(jsonString)
+                    jsonAst match {
+                      case JsArray(elements: Vector[JsValue]) => {
+                        val futures = elements.map { chunk =>
+                          val obj = chunk.asJsObject("chunk must be a JsObject")
+                          val chunkType = obj.fields("type").toString
+                          chunkType match {
+                            case "duration" =>
+                              durationRepo.insertOne(obj.fields("value").convertTo[models.Duration]);
+                            case "location" =>
+                              locationRepo.insertOne(obj.fields("value").convertTo[models.Location]);
+                            case "business" =>
+                              businessRepo.insertOne(obj.fields("value").convertTo[models.Business]);
+                          }
+                        }
+                        val finalFuture = Future.sequence(futures)
+                        onComplete(finalFuture) {
+                          case Success(_) =>
+                            complete("")
+                          case Failure(e) => {
+                            e.printStackTrace()
+                            complete(StatusCodes.BadRequest)
+                          }
+                        }
+                      }
+                      case _ => deserializationError("Array expected")
+                    }
+                  }
+                }
               })
-
           }
         }
       },

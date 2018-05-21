@@ -1,7 +1,5 @@
 package enderman.models
 
-import java.util.Date
-
 import org.bson.types.ObjectId
 
 
@@ -14,8 +12,6 @@ object Action {
 
 case class Duration(
                      _id: ObjectId, // for mongodb
-                     sessionId: String,
-                     userId: Option[String],
                      actionType: Int,
-                     date: Date,
+                     clientInfo: ClientInfo,
                    )
