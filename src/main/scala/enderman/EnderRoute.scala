@@ -64,9 +64,7 @@ trait EnderRoute extends JsonSupport with Config {
   def businessRepo: repository.BusinessRepository
 
   lazy val enderRoutes: Route =
-    path("") {
-      complete("God's in his heaven.")
-    } ~
+    concat(
       pathPrefix("v2land") {
         originHeaderDirective {
           sessionDirective { sessionId =>
@@ -125,6 +123,11 @@ trait EnderRoute extends JsonSupport with Config {
 
           }
         }
-      }
+      },
+      path("") {
+        getFromResource("static/index.html")
+      }, {
+        getFromResourceDirectory("static")
+      })
 
 }
