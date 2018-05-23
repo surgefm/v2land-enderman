@@ -5,7 +5,6 @@ services:
   - docker
 script:
   - sbt -jvm-opts travis/jvmopts.compile docker:publishLocal
-after_success:
   - docker --version  # document the version travis is using
   - pip install --user awscli # install aws cli w/o sudo
   - export PATH=$PATH:$HOME/.local/bin # put aws in the path
