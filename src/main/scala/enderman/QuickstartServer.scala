@@ -2,11 +2,14 @@ package enderman
 
 import scala.concurrent.{ Await, ExecutionContext }
 import scala.concurrent.duration.Duration
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, Props }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
+import enderman.actors.DailyAnalysis
 import models.repository
+
+import scala.concurrent.duration._
 
 object QuickstartServer extends App with EnderRoute with Config {
 
@@ -14,12 +17,16 @@ object QuickstartServer extends App with EnderRoute with Config {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContext = system.dispatcher
 
+  lazy val dailyAnalysisActor = system.actorOf(Props(classOf[DailyAnalysis]), "dailyAnalysis")
+
   lazy val durationRepo = new repository.DurationRepository(mongo.durationCollection)
   lazy val locationRepo = new repository.LocationRepository(mongo.locationCollection)
   lazy val businessRepo = new repository.BusinessRepository(mongo.businessCollection)
   lazy val contextScriptRepo = new repository.ContextScriptRepository(mongo.contextScriptCollection)
 
   lazy val routes: Route = enderRoutes
+
+  system.scheduler.scheduleOnce(1 days, dailyAnalysisActor, DailyAnalysis.Tick)
 
   Http().bindAndHandle(routes, "0.0.0.0", 8080)
 
