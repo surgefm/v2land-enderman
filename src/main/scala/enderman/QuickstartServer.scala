@@ -17,6 +17,7 @@ object QuickstartServer extends App with EnderRoute with Config {
   lazy val durationRepo = new repository.DurationRepository(mongo.durationCollection)
   lazy val locationRepo = new repository.LocationRepository(mongo.locationCollection)
   lazy val businessRepo = new repository.BusinessRepository(mongo.businessCollection)
+  lazy val contextScriptRepo = new repository.ContextScriptRepository(mongo.contextScriptCollection)
 
   lazy val routes: Route = enderRoutes
 
