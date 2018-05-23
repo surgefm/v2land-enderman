@@ -1,8 +1,11 @@
 package enderman
 
-import scala.concurrent.{ Await, ExecutionContext }
+import java.util.Date
+import java.util.concurrent.TimeUnit
+
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.Duration
-import akka.actor.{ ActorSystem, Props }
+import akka.actor.{ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
@@ -26,7 +29,12 @@ object QuickstartServer extends App with EnderRoute with Config {
 
   lazy val routes: Route = enderRoutes
 
-  system.scheduler.scheduleOnce(1 days, dailyAnalysisActor, DailyAnalysis.Tick)
+  {
+    val millisecondsOfADay = TimeUnit.DAYS.toMillis(1)
+    val now = new Date().getTime
+    val delay = millisecondsOfADay - (now % millisecondsOfADay)
+    system.scheduler.schedule(delay milliseconds, 1 days, dailyAnalysisActor, DailyAnalysis.Tick)
+  }
 
   Http().bindAndHandle(routes, "0.0.0.0", 8080)
 
