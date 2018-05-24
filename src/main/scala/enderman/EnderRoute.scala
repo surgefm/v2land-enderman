@@ -214,8 +214,7 @@ trait EnderRoute extends JsonSupport with Config {
         }
       },
       path("") {
-        complete("God's in his heaven.")
-        //        getFromResource("static/index.html")
+        getFromResource("static/index.html")
       }, {
         getFromResourceDirectory("static")
       })
