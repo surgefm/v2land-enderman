@@ -3,7 +3,10 @@ scala:
   - 2.12.5
 services:
   - docker
+before_install:
+  - nvm install 9
 script:
+  - bash ./build-frontend.sh
   - sbt -jvm-opts travis/jvmopts.compile docker:publishLocal
   - docker --version  # document the version travis is using
   - pip install --user awscli # install aws cli w/o sudo
