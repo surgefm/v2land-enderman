@@ -174,13 +174,11 @@ trait EnderRoute extends JsonSupport with Config {
         }
       },
       path("enderpearl.js") {
-        respondWithHeader(RawHeader("Content-Type", "application/javascript; charset=UTF-8")) {
-          onComplete(contextScriptRepo.latestContent) {
-            case Success(content) => complete(content)
-            case Failure(e) => {
-              e.printStackTrace()
-              complete(StatusCodes.BadRequest)
-            }
+        onComplete(contextScriptRepo.latestContent) {
+          case Success(content) => complete(content)
+          case Failure(e) => {
+            e.printStackTrace()
+            complete(StatusCodes.BadRequest)
           }
         }
       },
