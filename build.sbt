@@ -17,6 +17,8 @@ lazy val server = (project in file("server")).settings(
   organization := org,
   scalaVersion := scalaVer,
   version := endermanVer,
+  scalaJSProjects := Seq(client),
+  pipelineStages in Assets := Seq(scalaJSPipeline),
   libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
@@ -32,7 +34,8 @@ lazy val server = (project in file("server")).settings(
   dockerBaseImage := "openjdk:jre-alpine",
   dockerUpdateLatest := true,
   mainClass in Compile := Some("enderman.Main")
-).enablePlugins(JavaAppPackaging)
+).enablePlugins(SbtWeb)
+  .enablePlugins(JavaAppPackaging)
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
 
@@ -45,7 +48,8 @@ lazy val client = (project in file("client")).settings(
     "org.scala-js" %%% "scalajs-dom" % "0.9.5",
     "com.thoughtworks.binding" %%% "dom" % "latest.release"
   )
-)
+).enablePlugins(ScalaJSPlugin)
+  .enablePlugins(ScalaJSWeb)
 
 
 lazy val enderman =
