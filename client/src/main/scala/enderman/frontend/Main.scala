@@ -5,9 +5,10 @@ import com.thoughtworks.binding.Binding.{ BindingSeq, Var, Vars }
 import org.scalajs.dom.html.Table
 import org.scalajs.dom.{ Node, document }
 
-import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.annotation.{ JSExport, JSExportTopLevel }
 
-object App {
+@JSExportTopLevel("Main")
+object Main {
 
   case class Contact(name: Var[String], email: Var[String])
 
@@ -39,6 +40,7 @@ object App {
     </table>
   }
 
-  @JSExport def main(container: Node) = dom.render(container, table)
+  @JSExport def main() =
+    dom.render(document.getElementById("app"), table)
 
 }
