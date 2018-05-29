@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Actor
 import akka.event.Logging
 import akka.util.Timeout
-import enderman.QuickstartServer
+import enderman.Main
 
 import scala.concurrent.duration._
 import akka.http.scaladsl.server.Directives._
@@ -19,7 +19,7 @@ object DailyAnalysis {
 
 class DailyAnalysis extends Actor {
   import DailyAnalysis._
-  import QuickstartServer._
+  import Main._
 
   lazy val log = Logging(system, classOf[DailyAnalysis])
 

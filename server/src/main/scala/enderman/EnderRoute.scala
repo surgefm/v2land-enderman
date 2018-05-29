@@ -211,6 +211,13 @@ trait EnderRoute extends JsonSupport with Config {
           }
         }
       },
+      path("public" / Remaining) { pathString =>
+        if (pathString.endsWith(".js") || pathString.endsWith(".map")) {
+          getFromResource(pathString)
+        } else {
+          getFromResource("static/" + pathString)
+        }
+      },
       path("") {
         getFromResource("static/index.html")
       }, {

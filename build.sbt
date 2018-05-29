@@ -1,35 +1,77 @@
-import com.typesafe.sbt.packager.docker._
+import sbtcrossproject.{crossProject, CrossType}
 
 lazy val akkaHttpVersion = "10.1.1"
 lazy val akkaVersion    = "2.5.12"
 
-lazy val root = (project in file(".")).
-  settings(
-    inThisBuild(List(
-      organization    := "org.langchao",
-      version := "0.2.11",
-      scalaVersion    := "2.12.5"
-    )),
-    name := "Enderman",
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
-      "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
-      "com.typesafe.akka" %% "akka-http-xml"        % akkaHttpVersion,
-      "com.typesafe.akka" %% "akka-stream"          % akkaVersion,
-      "org.mongodb.scala" %% "mongo-scala-driver"   % "2.3.0",
+val sharedSettings = Seq(
+  organization := "org.langchao",
+  scalaVersion := "2.12.5",
+  version := "0.2.13"
+)
 
-      "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
-      "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
-      "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
-      "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test
-    )
+lazy val org = "org.langchao"
+lazy val endermanVer = "0.2.13"
+lazy val scalaVer = "2.12.5"
+
+lazy val jsResources = taskKey[Seq[File]](
+  "All scalajs generated JS files, including source maps"
+)
+
+jsResources := {
+  // this sets up a dependency on fastOptJS. For production, we'd want to run
+  // fullOptJs instead
+  val fastOpt = (fastOptJS in (client, Compile)).value.data
+  val dir = (crossTarget in (client, Compile)).value
+  dir.listFiles.filter(f => f.getName.endsWith(".js") || f.getName.endsWith(".js.map"))
+}
+
+lazy val server = (project in file("server")).settings(
+  organization := org,
+  scalaVersion := scalaVer,
+  version := endermanVer,
+  libraryDependencies ++= Seq(
+    "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http-xml"        % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-stream"          % akkaVersion,
+    "org.mongodb.scala" %% "mongo-scala-driver"   % "2.3.0",
+
+    "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
+    "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
+    "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
+    "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test
+  ),
+  dockerBaseImage := "openjdk:jre-alpine",
+  dockerUpdateLatest := true,
+  mainClass in Compile := Some("enderman.Main"),
+  (resources in Compile) := {
+    (resources in Compile).value ++ (jsResources in LocalRootProject).value
+  }
+).enablePlugins(JavaAppPackaging)
+  .enablePlugins(DockerPlugin)
+  .enablePlugins(AshScriptPlugin)
+
+lazy val client = (project in file("client")).settings(
+  organization := org,
+  scalaVersion := scalaVer,
+  version := endermanVer,
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  libraryDependencies ++= Seq(
+    "org.scala-js" %%% "scalajs-dom" % "0.9.5",
+    "com.thoughtworks.binding" %%% "dom" % "latest.release"
   )
+).enablePlugins(ScalaJSPlugin)
 
-enablePlugins(JavaAppPackaging)
-enablePlugins(DockerPlugin)
-enablePlugins(AshScriptPlugin)
 
-mainClass in Compile := Some("enderman.QuickstartServer")
+lazy val enderman =
+  crossProject(JSPlatform, JVMPlatform)
+    .crossType(CrossType.Full)
+    .settings(sharedSettings)
+    .jvmSettings(
+    )
+    .jsSettings(
+    )
 
-dockerBaseImage       := "openjdk:jre-alpine"
-dockerUpdateLatest := true
+lazy val endermanJVM = enderman.jvm
+lazy val endermanJS = enderman.js
+
