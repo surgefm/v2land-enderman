@@ -13,12 +13,22 @@ lazy val org = "org.langchao"
 lazy val endermanVer = "0.2.13"
 lazy val scalaVer = "2.12.5"
 
+lazy val jsResources = taskKey[Seq[File]](
+  "All scalajs generated JS files, including source maps"
+)
+
+jsResources := {
+  // this sets up a dependency on fastOptJS. For production, we'd want to run
+  // fullOptJs instead
+  val fastOpt = (fastOptJS in (client, Compile)).value.data
+  val dir = (crossTarget in (client, Compile)).value
+  dir.listFiles.filter(f => f.getName.endsWith(".js") || f.getName.endsWith(".js.map"))
+}
+
 lazy val server = (project in file("server")).settings(
   organization := org,
   scalaVersion := scalaVer,
   version := endermanVer,
-  scalaJSProjects := Seq(client),
-  pipelineStages in Assets := Seq(scalaJSPipeline),
   libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
@@ -33,9 +43,11 @@ lazy val server = (project in file("server")).settings(
   ),
   dockerBaseImage := "openjdk:jre-alpine",
   dockerUpdateLatest := true,
-  mainClass in Compile := Some("enderman.Main")
-).enablePlugins(SbtWeb)
-  .enablePlugins(JavaAppPackaging)
+  mainClass in Compile := Some("enderman.Main"),
+  (resources in Compile) := {
+    (resources in Compile).value ++ (jsResources in LocalRootProject).value
+  }
+).enablePlugins(JavaAppPackaging)
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
 
@@ -49,7 +61,6 @@ lazy val client = (project in file("client")).settings(
     "com.thoughtworks.binding" %%% "dom" % "latest.release"
   )
 ).enablePlugins(ScalaJSPlugin)
-  .enablePlugins(ScalaJSWeb)
 
 
 lazy val enderman =
