@@ -44,9 +44,7 @@ lazy val server = (project in file("server")).settings(
     "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
     "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
     "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test
-  ),
-  dockerBaseImage := "openjdk:jre-alpine",
-  dockerUpdateLatest := true
+  )
 )
 
 lazy val testServer = (project in file("build/test"))
@@ -55,7 +53,10 @@ lazy val testServer = (project in file("build/test"))
     mainClass in Compile := Some("enderman.Main"),
     (resources in Compile) := {
       (resources in Compile).value ++ (jsResources in LocalRootProject).value
-    }
+    },
+    dockerBaseImage := "openjdk:jre-alpine",
+    dockerUpdateLatest := true,
+    packageName in Docker := "enderman"
   ).enablePlugins(JavaAppPackaging)
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
@@ -67,7 +68,10 @@ lazy val prodServer = (project in file("build/prod"))
     mainClass in Compile := Some("enderman.Main"),
     (resources in Compile) := {
       (resources in Compile).value ++ (prodJsResources in LocalRootProject).value
-    }
+    },
+    dockerBaseImage := "openjdk:jre-alpine",
+    dockerUpdateLatest := true,
+    packageName in Docker := "enderman"
   ).enablePlugins(JavaAppPackaging)
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
