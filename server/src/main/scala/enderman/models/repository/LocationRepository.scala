@@ -5,7 +5,10 @@ import org.mongodb.scala.MongoCollection
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-class LocationRepository(collection: MongoCollection[Location])(implicit ec: ExecutionContext) {
+class LocationRepository(
+  val collection: MongoCollection[Location])(
+  implicit
+  val ec: ExecutionContext) extends ClientInfo[Location] {
 
   def insertOne(location: Location): Future[String] =
     collection
