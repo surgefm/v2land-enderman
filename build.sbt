@@ -3,16 +3,6 @@ import sbtcrossproject.{crossProject, CrossType}
 lazy val akkaHttpVersion = "10.1.1"
 lazy val akkaVersion    = "2.5.12"
 
-val sharedSettings = Seq(
-  organization := "org.langchao",
-  scalaVersion := "2.12.5",
-  version := "0.2.13"
-)
-
-lazy val org = "org.langchao"
-lazy val endermanVer = "0.2.13"
-lazy val scalaVer = "2.12.5"
-
 lazy val jsResources = taskKey[Seq[File]](
   "All scalajs generated JS files, including source maps"
 )
@@ -36,9 +26,9 @@ prodJsResources := {
 }
 
 lazy val commonSettings = Seq(
-  organization := org,
-  scalaVersion := scalaVer,
-  version := endermanVer
+  organization := "org.langchao",
+  scalaVersion := "2.12.5",
+  version := "0.2.13"
 )
 
 lazy val server = (project in file("server")).settings(
@@ -84,9 +74,7 @@ lazy val prodServer = (project in file("build/prod"))
   .dependsOn(server)
 
 lazy val client = (project in file("client")).settings(
-  organization := org,
-  scalaVersion := scalaVer,
-  version := endermanVer,
+  commonSettings,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   libraryDependencies ++= Seq(
     "org.scala-js" %%% "scalajs-dom" % "0.9.5",
@@ -98,7 +86,7 @@ lazy val client = (project in file("client")).settings(
 lazy val shared =
   crossProject(JSPlatform, JVMPlatform)
     .crossType(CrossType.Full)
-    .settings(sharedSettings)
+    .settings(commonSettings)
     .jvmSettings(
     )
     .jsSettings(
