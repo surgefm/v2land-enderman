@@ -17,6 +17,10 @@ lazy val jsResources = taskKey[Seq[File]](
   "All scalajs generated JS files, including source maps"
 )
 
+lazy val prodJsResources = taskKey[Seq[File]](
+  "All scalajs generated JS files, including source maps"
+)
+
 jsResources := {
   // this sets up a dependency on fastOptJS. For production, we'd want to run
   // fullOptJs instead
@@ -25,10 +29,20 @@ jsResources := {
   dir.listFiles.filter(f => f.getName.endsWith(".js") || f.getName.endsWith(".js.map"))
 }
 
-lazy val server = (project in file("server")).settings(
+prodJsResources := {
+  val fullOpt = (fullOptJS in (client, Compile)).value.data
+  val dir = (crossTarget in (client, Compile)).value
+  dir.listFiles.filter(f => f.getName.endsWith(".js") || f.getName.endsWith(".js.map"))
+}
+
+lazy val commonSettings = Seq(
   organization := org,
   scalaVersion := scalaVer,
-  version := endermanVer,
+  version := endermanVer
+)
+
+lazy val server = (project in file("server")).settings(
+  commonSettings,
   libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
@@ -43,13 +57,34 @@ lazy val server = (project in file("server")).settings(
   ),
   dockerBaseImage := "openjdk:jre-alpine",
   dockerUpdateLatest := true,
-  mainClass in Compile := Some("enderman.Main"),
-  (resources in Compile) := {
-    (resources in Compile).value ++ (jsResources in LocalRootProject).value
-  }
-).enablePlugins(JavaAppPackaging)
+//  (resources in Compile) := {
+//    (resources in Compile).value ++ (prodJsResources in LocalRootProject).value
+//  }
+)
+
+lazy val testServer = (project in file("build/test"))
+  .settings(
+    commonSettings,
+    mainClass in Compile := Some("enderman.Main"),
+    (resources in Compile) := {
+      (resources in Compile).value ++ (jsResources in LocalRootProject).value
+    }
+  ).enablePlugins(JavaAppPackaging)
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
+  .dependsOn(server)
+
+lazy val prodServer = (project in file("build/prod"))
+  .settings(
+    commonSettings,
+    mainClass in Compile := Some("enderman.Main"),
+    (resources in Compile) := {
+      (resources in Compile).value ++ (prodJsResources in LocalRootProject).value
+    }
+  ).enablePlugins(JavaAppPackaging)
+  .enablePlugins(DockerPlugin)
+  .enablePlugins(AshScriptPlugin)
+  .dependsOn(server)
 
 lazy val client = (project in file("client")).settings(
   organization := org,
@@ -63,7 +98,7 @@ lazy val client = (project in file("client")).settings(
 ).enablePlugins(ScalaJSPlugin)
 
 
-lazy val enderman =
+lazy val shared =
   crossProject(JSPlatform, JVMPlatform)
     .crossType(CrossType.Full)
     .settings(sharedSettings)
@@ -72,6 +107,6 @@ lazy val enderman =
     .jsSettings(
     )
 
-lazy val endermanJVM = enderman.jvm
-lazy val endermanJS = enderman.js
+lazy val sharedJVM = shared.jvm
+lazy val sharedJS = shared.js
 
