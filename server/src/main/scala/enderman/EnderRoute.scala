@@ -109,7 +109,8 @@ trait EnderRoute extends JsonSupport with Config {
                 },
                 path("location") {
                   get {
-                    parameters("url", "userId".?) { (url, userIdOpt) =>
+                    parameters("url", "userId".?) { (encodedUrl, userIdOpt) =>
+                      val url = new String(java.util.Base64.getDecoder.decode(encodedUrl))
                       val location = models.Location(
                         new ObjectId(),
                         url,
