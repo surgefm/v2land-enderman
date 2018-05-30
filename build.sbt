@@ -3,17 +3,11 @@ import sbtcrossproject.{crossProject, CrossType}
 lazy val akkaHttpVersion = "10.1.1"
 lazy val akkaVersion    = "2.5.12"
 
-val sharedSettings = Seq(
-  organization := "org.langchao",
-  scalaVersion := "2.12.5",
-  version := "0.2.13"
+lazy val jsResources = taskKey[Seq[File]](
+  "All scalajs generated JS files, including source maps"
 )
 
-lazy val org = "org.langchao"
-lazy val endermanVer = "0.2.13"
-lazy val scalaVer = "2.12.5"
-
-lazy val jsResources = taskKey[Seq[File]](
+lazy val prodJsResources = taskKey[Seq[File]](
   "All scalajs generated JS files, including source maps"
 )
 
@@ -25,10 +19,20 @@ jsResources := {
   dir.listFiles.filter(f => f.getName.endsWith(".js") || f.getName.endsWith(".js.map"))
 }
 
+prodJsResources := {
+  val fullOpt = (fullOptJS in (client, Compile)).value.data
+  val dir = (crossTarget in (client, Compile)).value
+  dir.listFiles.filter(f => f.getName.endsWith(".js") || f.getName.endsWith(".js.map"))
+}
+
+lazy val commonSettings = Seq(
+  organization := "org.langchao",
+  scalaVersion := "2.12.5",
+  version := "0.2.13"
+)
+
 lazy val server = (project in file("server")).settings(
-  organization := org,
-  scalaVersion := scalaVer,
-  version := endermanVer,
+  commonSettings,
   libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
@@ -42,19 +46,35 @@ lazy val server = (project in file("server")).settings(
     "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test
   ),
   dockerBaseImage := "openjdk:jre-alpine",
-  dockerUpdateLatest := true,
-  mainClass in Compile := Some("enderman.Main"),
-  (resources in Compile) := {
-    (resources in Compile).value ++ (jsResources in LocalRootProject).value
-  }
-).enablePlugins(JavaAppPackaging)
+  dockerUpdateLatest := true
+)
+
+lazy val testServer = (project in file("build/test"))
+  .settings(
+    commonSettings,
+    mainClass in Compile := Some("enderman.Main"),
+    (resources in Compile) := {
+      (resources in Compile).value ++ (jsResources in LocalRootProject).value
+    }
+  ).enablePlugins(JavaAppPackaging)
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
+  .dependsOn(server)
+
+lazy val prodServer = (project in file("build/prod"))
+  .settings(
+    commonSettings,
+    mainClass in Compile := Some("enderman.Main"),
+    (resources in Compile) := {
+      (resources in Compile).value ++ (prodJsResources in LocalRootProject).value
+    }
+  ).enablePlugins(JavaAppPackaging)
+  .enablePlugins(DockerPlugin)
+  .enablePlugins(AshScriptPlugin)
+  .dependsOn(server)
 
 lazy val client = (project in file("client")).settings(
-  organization := org,
-  scalaVersion := scalaVer,
-  version := endermanVer,
+  commonSettings,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   libraryDependencies ++= Seq(
     "org.scala-js" %%% "scalajs-dom" % "0.9.5",
@@ -63,15 +83,15 @@ lazy val client = (project in file("client")).settings(
 ).enablePlugins(ScalaJSPlugin)
 
 
-lazy val enderman =
+lazy val shared =
   crossProject(JSPlatform, JVMPlatform)
     .crossType(CrossType.Full)
-    .settings(sharedSettings)
+    .settings(commonSettings)
     .jvmSettings(
     )
     .jsSettings(
     )
 
-lazy val endermanJVM = enderman.jvm
-lazy val endermanJS = enderman.js
+lazy val sharedJVM = shared.jvm
+lazy val sharedJS = shared.js
 

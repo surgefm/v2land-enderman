@@ -6,4 +6,6 @@ trait Config {
 
   lazy val config = ConfigFactory.load()
 
+  lazy val env = config.getString("enderman.env")
+
 }
