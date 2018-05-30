@@ -10,14 +10,15 @@ import akka.http.scaladsl.server.directives.MethodDirectives.get
 import akka.http.scaladsl.server.directives.MethodDirectives.post
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.http.scaladsl.server.directives.PathDirectives.path
+import akka.http.scaladsl.model._
 import enderman.models.{ ContextScript, repository }
-import akka.util.{ Timeout }
+import akka.util.{ ByteString, Timeout }
 import java.util.UUID.randomUUID
 
-import akka.http.scaladsl.model.{ HttpHeader, StatusCodes }
+import akka.http.scaladsl.model.HttpEntity.Strict
 
 import scala.util.{ Failure, Success }
-import akka.http.scaladsl.model.headers.{ HttpCookie, HttpCookiePair, RawHeader }
+import akka.http.scaladsl.model.headers.{ HttpCookie, HttpCookiePair, RawHeader, `Content-Type` }
 import akka.stream.ActorMaterializer
 import org.bson.types.ObjectId
 import spray.json.{ JsArray, JsValue, JsonParser, deserializationError }
@@ -219,7 +220,11 @@ trait EnderRoute extends JsonSupport with Config {
         }
       },
       path("") {
-        getFromResource("static/index.html")
+        complete(HttpResponse(
+          200,
+          entity = Strict(
+            ContentType(MediaTypes.`text/html`, HttpCharsets.`UTF-8`),
+            ByteString(Page.index))))
       }, {
         getFromResourceDirectory("static")
       })
