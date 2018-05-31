@@ -57,7 +57,7 @@ object ApiRoute extends JsonSupport {
         val yesterday = yesterdayDate
         val sevenDaysAgo = beforeDay(7, yesterday)
 
-        val listOfArr: List[ArrayBuffer[Duration]] = List
+        def listOfArr: List[ArrayBuffer[Duration]] = List
           .fill(7)(0)
           .map { _ => ArrayBuffer.empty[Duration] }
 
@@ -65,12 +65,13 @@ object ApiRoute extends JsonSupport {
           .durationRepo
           .findBetweenDate(sevenDaysAgo, yesterday)
           .map[Seq[Int]] { locations =>
-            locations.foldLeft(listOfArr) { (acc, value) =>
-              val createdAt = value.clientInfo.date
-              val index = ((createdAt.getTime - sevenDaysAgo.getTime) / millisecondsOfADay).toInt
-              acc(index).append(value)
-              acc
-            }
+            locations
+              .foldLeft(listOfArr) { (acc, value) =>
+                val createdAt = value.clientInfo.date
+                val index = ((createdAt.getTime - sevenDaysAgo.getTime) / millisecondsOfADay).toInt
+                acc(index).append(value)
+                acc
+              }
               .map { chunk =>
                 chunk
                   .groupBy(_.clientInfo.sessionId)

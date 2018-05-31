@@ -39,7 +39,7 @@ object Main {
   }
 
   private def fetchRecent7Days(): Promise[Response] = {
-    Fetch.fetch("/api/v2land/recent7days")
+    Fetch.fetch("/api/v2land/activeUser/recent7days")
   }
 
   private def renderChart = {
@@ -54,7 +54,7 @@ object Main {
               "labels" -> js.Array("-7", "-6", "-5", "-4", "-3", "-2", "-1"),
               "datasets" -> js.Array(
                 js.Dynamic.literal(
-                  "label" -> "Recent 7 Days",
+                  "label" -> "浏览用户数量",
                   "data" -> data,
                   "borderWidth" -> 1))))
 
