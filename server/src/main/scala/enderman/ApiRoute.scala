@@ -13,20 +13,25 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 
-object ApiRoute extends JsonSupport {
+object ApiRoute extends JsonSupport with Config {
   import DefaultJsonProtocol._
   import Main.ec
 
-  private lazy val millisecondsOfADay: Long = TimeUnit.DAYS.toMillis(1)
+  private def dayTime(duration: Int = 1): Long = TimeUnit.DAYS.toMillis(duration)
+  private def hourTime(duration: Int = 1): Long = TimeUnit.HOURS.toMillis(duration)
 
   private def yesterdayDate() = {
     val now = new Date().getTime
-    val yesterdayMs = now - (now % millisecondsOfADay)
+    val yesterdayMs = if (env == "production") {
+      now - ((now + hourTime(8)) % dayTime())
+    } else {
+      now - (now % dayTime())
+    }
     new Date(yesterdayMs)
   }
 
   private def beforeDay(num: Int, target: Date) =
-    new Date(target.getTime - num * millisecondsOfADay)
+    new Date(target.getTime - num * dayTime())
 
   lazy val routes: Route =
     concat(
@@ -39,7 +44,7 @@ object ApiRoute extends JsonSupport {
           .map[Seq[Int]] { locations =>
             locations.foldLeft(ArrayBuffer.fill(7)(0)) { (acc, value) =>
               val createdAt = value.clientInfo.date
-              val index = ((createdAt.getTime - sevenDaysAgo.getTime) / millisecondsOfADay).toInt
+              val index = ((createdAt.getTime - sevenDaysAgo.getTime) / dayTime()).toInt
               acc(index) += 1
               acc
             }
@@ -68,7 +73,7 @@ object ApiRoute extends JsonSupport {
             locations
               .foldLeft(listOfArr) { (acc, value) =>
                 val createdAt = value.clientInfo.date
-                val index = ((createdAt.getTime - sevenDaysAgo.getTime) / millisecondsOfADay).toInt
+                val index = ((createdAt.getTime - sevenDaysAgo.getTime) / dayTime()).toInt
                 acc(index).append(value)
                 acc
               }
