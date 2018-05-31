@@ -81,8 +81,6 @@ trait EnderRoute extends JsonSupport with Config {
   def businessRepo: repository.BusinessRepository
   def contextScriptRepo: repository.ContextScriptRepository
 
-  lazy val apiRoutes = new ApiRoute
-
   lazy val enderRoutes: Route =
     concat(
       pathPrefix("v2land") {
@@ -178,7 +176,7 @@ trait EnderRoute extends JsonSupport with Config {
         }
       },
       pathPrefix("api") {
-        apiRoutes.routes
+        ApiRoute.routes
       },
       path("enderpearl.js") {
         onComplete(contextScriptRepo.latestContent) {
