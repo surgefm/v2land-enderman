@@ -14,6 +14,8 @@ object Page extends Config {
       |</head>
       |<body>
       |  <div id="app"></div>
+      |  <canvas id="chart-recent7days"></canvas>
+      |  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
       |  <script src="${scriptSrc}"></script>
       |  <script>
       |    Main.main()

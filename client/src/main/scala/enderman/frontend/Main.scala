@@ -1,11 +1,16 @@
 package enderman.frontend
 
 import com.thoughtworks.binding.{ Binding, dom }
-import com.thoughtworks.binding.Binding.{ BindingSeq, Var, Vars }
-import org.scalajs.dom.html.Div
-import org.scalajs.dom.{ Node, document }
+import com.thoughtworks.binding.Binding.{ Var, Vars }
+import org.scalajs.dom.html.{ Canvas, Div }
+import org.scalajs.dom.document
+import org.scalajs.dom.experimental.{ Fetch, Response }
 
-import scala.scalajs.js.annotation.{ JSExport, JSExportTopLevel }
+import scala.scalajs.js
+import scala.scalajs.js.Promise
+import scala.scalajs.js.annotation.{ JSExport, JSExportTopLevel, JSGlobal }
+import scala.util.{ Failure, Success }
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @JSExportTopLevel("Main")
 object Main {
@@ -19,11 +24,46 @@ object Main {
     <div class="app">
       { Navbar.apply.bind }
       { Banner.apply.bind }
-      { Body.apply.bind }
     </div>
   }
 
-  @JSExport def main() =
-    dom.render(document.getElementById("app"), app)
+  @js.native
+  @JSGlobal("Chart")
+  class Chart(ctx: Any, option: js.Object) extends js.Object
+
+  @JSExport def main() = {
+    val appDom = document.getElementById("app")
+
+    dom.render(appDom, app)
+    renderChart
+  }
+
+  private def fetchRecent7Days(): Promise[Response] = {
+    Fetch.fetch("/api/v2land/recent7days")
+  }
+
+  private def renderChart = {
+    fetchRecent7Days().toFuture.onComplete {
+      case Success(resp) => {
+        val option = js.Dynamic.literal(
+          "type" -> "line",
+          "data" -> js.Dynamic.literal(
+            "labels" -> js.Array("-7", "-6", "-5", "-4", "-3", "-2", "-1"),
+            "datasets" -> js.Array(
+              js.Dynamic.literal(
+                "label" -> "Recent 7 Days",
+                "data" -> resp.json(),
+                "borderWidth" -> 1))))
+
+        js.Dynamic.global.console.log(option)
+        val chart7days = document.getElementById("chart-recent7days").asInstanceOf[Canvas]
+        val ctx = chart7days.getContext("2d")
+        val chart = new Chart(ctx, option)
+      }
+      case Failure(e) => {
+        js.Dynamic.global.console.log(e.asInstanceOf[js.Any])
+      }
+    }
+  }
 
 }
