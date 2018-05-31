@@ -20,7 +20,7 @@ object ApiRoute extends JsonSupport {
 
   private def yesterdayDate() = {
     val now = new Date().getTime
-    val yesterdayMs = now / millisecondsOfADay
+    val yesterdayMs = now - (now % millisecondsOfADay)
     new Date(yesterdayMs)
   }
 
