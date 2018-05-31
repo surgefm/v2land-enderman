@@ -43,27 +43,29 @@ object Main {
   }
 
   private def renderChart = {
-    fetchRecent7Days().toFuture.onComplete {
-      case Success(resp) => {
-        val option = js.Dynamic.literal(
-          "type" -> "line",
-          "data" -> js.Dynamic.literal(
-            "labels" -> js.Array("-7", "-6", "-5", "-4", "-3", "-2", "-1"),
-            "datasets" -> js.Array(
-              js.Dynamic.literal(
-                "label" -> "Recent 7 Days",
-                "data" -> resp.json(),
-                "borderWidth" -> 1))))
+    fetchRecent7Days()
+      .toFuture
+      .flatMap({ resp => resp.json().toFuture })
+      .onComplete {
+        case Success(data) => {
+          val option = js.Dynamic.literal(
+            "type" -> "line",
+            "data" -> js.Dynamic.literal(
+              "labels" -> js.Array("-7", "-6", "-5", "-4", "-3", "-2", "-1"),
+              "datasets" -> js.Array(
+                js.Dynamic.literal(
+                  "label" -> "Recent 7 Days",
+                  "data" -> data,
+                  "borderWidth" -> 1))))
 
-        js.Dynamic.global.console.log(option)
-        val chart7days = document.getElementById("chart-recent7days").asInstanceOf[Canvas]
-        val ctx = chart7days.getContext("2d")
-        val chart = new Chart(ctx, option)
+          val chart7days = document.getElementById("chart-recent7days").asInstanceOf[Canvas]
+          val ctx = chart7days.getContext("2d")
+          val chart = new Chart(ctx, option)
+        }
+        case Failure(e) => {
+          js.Dynamic.global.console.log(e.asInstanceOf[js.Any])
+        }
       }
-      case Failure(e) => {
-        js.Dynamic.global.console.log(e.asInstanceOf[js.Any])
-      }
-    }
   }
 
 }
