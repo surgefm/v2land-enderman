@@ -28,7 +28,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 trait EnderRoute extends JsonSupport with Config {
 
   implicit def system: ActorSystem
-  implicit def materializer: ActorMaterializer;
+  implicit def materializer: ActorMaterializer
   implicit def ec: ExecutionContext
 
   lazy val log = Logging(system, classOf[EnderRoute])
@@ -174,6 +174,9 @@ trait EnderRoute extends JsonSupport with Config {
             }
           }
         }
+      },
+      pathPrefix("api") {
+        ApiRoute.routes
       },
       path("enderpearl.js") {
         onComplete(contextScriptRepo.latestContent) {
