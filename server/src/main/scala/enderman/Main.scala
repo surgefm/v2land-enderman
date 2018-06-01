@@ -29,12 +29,11 @@ object Main extends App with EnderRoute {
 
   lazy val routes: Route = enderRoutes
 
-  {
-    val millisecondsOfADay = TimeUnit.DAYS.toMillis(1)
-    val now = new Date().getTime
-    val delay = millisecondsOfADay - (now % millisecondsOfADay)
-    system.scheduler.schedule(delay milliseconds, 1 days, dailyAnalysisActor, DailyAnalysis.Tick)
-  }
+  system.scheduler.schedule(
+    util.DateHelper.duration.delayToTomorrow,
+    1 days,
+    dailyAnalysisActor,
+    DailyAnalysis.Tick)
 
   Http().bindAndHandle(routes, "0.0.0.0", 8080)
 

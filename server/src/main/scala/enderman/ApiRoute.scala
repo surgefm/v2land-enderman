@@ -1,8 +1,5 @@
 package enderman
 
-import java.util.Date
-import java.util.concurrent.TimeUnit
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.Directives._
@@ -16,22 +13,7 @@ import scala.util.{ Failure, Success }
 object ApiRoute extends JsonSupport {
   import DefaultJsonProtocol._
   import Main.ec
-
-  private def dayTime(duration: Int = 1): Long = TimeUnit.DAYS.toMillis(duration)
-  private def hourTime(duration: Int = 1): Long = TimeUnit.HOURS.toMillis(duration)
-
-  private def yesterdayDate() = {
-    val now = new Date().getTime
-    val yesterdayMs = if (Config.isProduction) {
-      now - ((now + hourTime(8)) % dayTime())
-    } else {
-      now - (now % dayTime())
-    }
-    new Date(yesterdayMs)
-  }
-
-  private def beforeDay(num: Int, target: Date) =
-    new Date(target.getTime - num * dayTime())
+  import util.DateHelper._
 
   lazy val routes: Route =
     concat(
