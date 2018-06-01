@@ -14,7 +14,7 @@ import models.repository
 
 import scala.concurrent.duration._
 
-object Main extends App with EnderRoute with Config {
+object Main extends App with EnderRoute {
 
   implicit val system: ActorSystem = ActorSystem("endermanServer")
   implicit val materializer: ActorMaterializer = ActorMaterializer()

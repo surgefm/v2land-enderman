@@ -25,7 +25,7 @@ import spray.json.{ JsArray, JsValue, JsonParser, deserializationError }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-trait EnderRoute extends JsonSupport with Config {
+trait EnderRoute extends JsonSupport {
 
   implicit def system: ActorSystem
   implicit def materializer: ActorMaterializer
@@ -52,7 +52,7 @@ trait EnderRoute extends JsonSupport with Config {
       };
     }
 
-  private lazy val checkOrigin = config.getString("enderman.trackOrigin")
+  private lazy val checkOrigin = Config.config.getString("enderman.trackOrigin")
 
   private val originHeaderDirective: Directive0 =
     headerValueByName("Origin").flatMap { value =>
@@ -190,7 +190,7 @@ trait EnderRoute extends JsonSupport with Config {
       path("contextscript") {
         post {
           headerValueByName("X-ENDERMAN-TOKEN") { tokenValue =>
-            val verifyToken = config.getString("enderman.scriptUploadToken")
+            val verifyToken = Config.config.getString("enderman.scriptUploadToken")
             if (tokenValue == verifyToken) {
               fileUpload("bundle") {
                 case (_, source) =>

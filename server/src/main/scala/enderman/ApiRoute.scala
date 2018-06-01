@@ -13,7 +13,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 
-object ApiRoute extends JsonSupport with Config {
+object ApiRoute extends JsonSupport {
   import DefaultJsonProtocol._
   import Main.ec
 
@@ -22,7 +22,7 @@ object ApiRoute extends JsonSupport with Config {
 
   private def yesterdayDate() = {
     val now = new Date().getTime
-    val yesterdayMs = if (env == "production") {
+    val yesterdayMs = if (Config.isProduction) {
       now - ((now + hourTime(8)) % dayTime())
     } else {
       now - (now % dayTime())

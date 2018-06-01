@@ -2,10 +2,10 @@ package enderman
 
 import com.typesafe.config.ConfigFactory
 
-trait Config {
+object Config {
 
   lazy val config = ConfigFactory.load()
 
-  lazy val env = config.getString("enderman.env")
+  lazy val isProduction = config.getString("enderman.env") == "production"
 
 }

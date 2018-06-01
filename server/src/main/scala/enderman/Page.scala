@@ -1,6 +1,6 @@
 package enderman
 
-object Page extends Config {
+object Page {
 
   def index: String = {
     s"""<!DOCTYPE html>
@@ -26,7 +26,7 @@ object Page extends Config {
   }
 
   def scriptSrc: String = {
-    if (env == "production") {
+    if (Config.isProduction) {
       "/public/client-opt.js"
     } else {
       "/public/client-fastopt.js"
