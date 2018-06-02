@@ -178,6 +178,9 @@ trait EnderRoute extends JsonSupport {
       pathPrefix("api") {
         ApiRoute.routes
       },
+      pathPrefix("chart") {
+        ChartRoute.routes
+      },
       path("enderpearl.js") {
         onComplete(contextScriptRepo.latestContent) {
           case Success(content) => complete(content)
