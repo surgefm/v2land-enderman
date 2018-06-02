@@ -48,7 +48,7 @@ object DateHelper {
         targetDay = targetDay.plusHours(9 - hourOfDay)
       }
 
-      Duration(Date.from(targetDay.toInstant).getTime - new Date().getTime, TimeUnit.MICROSECONDS)
+      Duration(Date.from(targetDay.toInstant).getTime - new Date().getTime, TimeUnit.MILLISECONDS)
     }
 
   }
