@@ -8,4 +8,6 @@ object Config {
 
   lazy val isProduction = config.getString("enderman.env") == "production"
 
+  lazy val slackHook = config.getString("enderman.slackHook")
+
 }

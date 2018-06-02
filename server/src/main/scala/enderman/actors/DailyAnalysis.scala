@@ -1,7 +1,6 @@
 package enderman.actors
 
 import java.util.Date
-import java.util.concurrent.TimeUnit
 
 import akka.actor.Actor
 import akka.event.Logging

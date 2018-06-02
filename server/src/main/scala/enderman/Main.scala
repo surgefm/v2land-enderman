@@ -6,7 +6,7 @@ import akka.actor.{ ActorSystem, Props }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import enderman.actors.DailyAnalysis
+import enderman.actors.{ DailyAnalysis, WeeklyAnalysis }
 import enderman.util.DateHelper
 import models.repository
 
@@ -19,6 +19,7 @@ object Main extends App with EnderRoute {
   implicit val ec: ExecutionContext = system.dispatcher
 
   lazy val dailyAnalysisActor = system.actorOf(Props[DailyAnalysis], "dailyAnalysis")
+  lazy val weeklyAnalysisActor = system.actorOf(Props[WeeklyAnalysis], "weeklyAnalysis")
 
   lazy val durationRepo = new repository.DurationRepository(mongo.durationCollection)
   lazy val locationRepo = new repository.LocationRepository(mongo.locationCollection)
@@ -36,6 +37,12 @@ object Main extends App with EnderRoute {
     1 days,
     dailyAnalysisActor,
     DailyAnalysis.Tick)
+
+  system.scheduler.schedule(
+    DateHelper.duration.delayToNextWeekMonday9Am,
+    7 days,
+    weeklyAnalysisActor,
+    WeeklyAnalysis.Tick)
 
   Await.result(system.whenTerminated, Duration.Inf)
 
