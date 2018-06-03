@@ -16,3 +16,12 @@ deploy:
     branch: master
 notifications:
   slack: v2land:xoeT2IXt8yCaUfMxoBbXrSZD
+sudo: false
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+before_cache:
+    - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+    - find $HOME/.sbt        -name "*.lock"               -print -delete
+
