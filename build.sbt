@@ -28,7 +28,7 @@ prodJsResources := {
 lazy val commonSettings = Seq(
   organization := "org.langchao",
   scalaVersion := "2.12.5",
-  version := "0.3.11"
+  version := "0.3.12"
 )
 
 lazy val server = (project in file("server")).settings(

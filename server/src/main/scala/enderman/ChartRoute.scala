@@ -20,6 +20,8 @@ object ChartRoute extends JsonSupport {
   lazy val routes: Route =
     concat(
       path("v2land" / "activeUser" / "recent7days") {
+//        DEPERATED API
+//        向下兼容，暂时不删除
         val yesterday = yesterdayDate
         val sevenDaysAgo = beforeDay(7, yesterday)
 

@@ -1,15 +1,18 @@
 package enderman.actors
 
+import java.time.ZonedDateTime
+import java.util.Date
+
 import akka.actor.Actor
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.util.ByteString
-import enderman.{ Config, JsonSupport }
+import enderman.{Config, JsonSupport}
 import spray.json._
 
 import scala.concurrent.Future
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 object WeeklyAnalysis extends JsonSupport {
   import DefaultJsonProtocol._
@@ -35,11 +38,12 @@ class WeeklyAnalysis extends Actor {
 
   def receive = {
     case Tick =>
+      val date = new Date().toInstant.atZone(Config.globalZonedId)
       val slackMsg = SlackWebHookRequest(
         "Enderman Weekly",
         List(SlackImageAttachment(
           "上周活跃用户",
-          "https://enderman.v2land.net/chart/v2land/activeUser/recent7days")))
+          s"https://enderman.v2land.net/chart/v2land/activeUser/${date.getYear}/${date.getMonthValue}/${date.getDayOfMonth}")))
       val responseFuture: Future[HttpResponse] = Http()
         .singleRequest(
           HttpRequest(
