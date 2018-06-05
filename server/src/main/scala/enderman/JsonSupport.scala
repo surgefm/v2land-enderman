@@ -63,6 +63,8 @@ trait JsonSupport extends SprayJsonSupport {
           case None => new ObjectId();
         },
         fields("url").convertTo[String],
+        fields.get("redirectFrom").map { _.convertTo[String] },
+        fields.get("referrer").map { _.convertTo[String] },
         fields("clientInfo").convertTo[ClientInfo],
       )
     }

@@ -81,6 +81,9 @@ trait EnderRoute extends JsonSupport {
   def businessRepo: repository.BusinessRepository
   def contextScriptRepo: repository.ContextScriptRepository
 
+  private def decodeBase64(content: String) =
+    new String(java.util.Base64.getDecoder.decode(content))
+
   lazy val enderRoutes: Route =
     concat(
       pathPrefix("v2land") {
@@ -109,19 +112,22 @@ trait EnderRoute extends JsonSupport {
                 },
                 path("location") {
                   get {
-                    parameters("url", "userId".?) { (encodedUrl, userIdOpt) =>
-                      val url = new String(java.util.Base64.getDecoder.decode(encodedUrl))
-                      val location = models.Location(
-                        new ObjectId(),
-                        url,
-                        clientInfo.copy(userId = userIdOpt))
-                      onComplete(locationRepo.insertOne(location)) {
-                        case Success(_) => complete("")
-                        case Failure(e) => {
-                          e.printStackTrace()
-                          complete(StatusCodes.BadRequest)
+                    parameters("url", "userId".?, "redirectFrom".?, "referrer".?) {
+                      (encodedUrl, userIdOpt, redirectFrom, referrer) =>
+                        val url = decodeBase64(encodedUrl)
+                        val location = models.Location(
+                          new ObjectId(),
+                          url,
+                          redirectFrom.map(decodeBase64),
+                          referrer.map(decodeBase64),
+                          clientInfo.copy(userId = userIdOpt))
+                        onComplete(locationRepo.insertOne(location)) {
+                          case Success(_) => complete("")
+                          case Failure(e) => {
+                            e.printStackTrace()
+                            complete(StatusCodes.BadRequest)
+                          }
                         }
-                      }
                     }
                   }
                 },
