@@ -17,46 +17,47 @@ object ChartRoute extends JsonSupport {
   import Main.ec
   import util.DateHelper._
 
+  def activeUser(date: Date): Future[Seq[(Int, Int)]] = {
+    val sevenDaysAgo = beforeDay(7, date)
+
+    def listOfArr: List[ArrayBuffer[Duration]] = List
+      .fill(7)(0)
+      .map { _ => ArrayBuffer.empty[Duration] }
+    Main
+      .durationRepo
+      .findBetweenDate(sevenDaysAgo, date)
+      .map { locations =>
+        (-7 to -1)
+          //              TODO: X axis
+          //              .map {
+          //                offset =>
+          //                  yesterday
+          //                    .toInstant
+          //                    .atZone(ZoneId.of("GMT+8"))
+          //                    .minusDays(offset * -1)
+          //              }
+          .zip {
+            locations
+              .foldLeft(listOfArr) { (acc, value) =>
+                val createdAt = value.clientInfo.date
+                val index = ((createdAt.getTime - sevenDaysAgo.getTime) / dayTime()).toInt
+                acc(index).append(value)
+                acc
+              }
+              .map { chunk =>
+                chunk
+                  .groupBy(_.clientInfo.sessionId)
+                  .toList.length
+              }
+          }
+      }
+  }
+
   lazy val routes: Route =
     concat(
       path("v2land" / "activeUser" / "recent7days") {
-//        DEPERATED API
-//        向下兼容，暂时不删除
         val yesterday = yesterdayDate
-        val sevenDaysAgo = beforeDay(7, yesterday)
-
-        def listOfArr: List[ArrayBuffer[Duration]] = List
-          .fill(7)(0)
-          .map { _ => ArrayBuffer.empty[Duration] }
-        val future: Future[Seq[(Int, Int)]] = Main
-          .durationRepo
-          .findBetweenDate(sevenDaysAgo, yesterday)
-          .map { locations =>
-            (-7 to -1)
-              //              TODO: X axis
-              //              .map {
-              //                offset =>
-              //                  yesterday
-              //                    .toInstant
-              //                    .atZone(ZoneId.of("GMT+8"))
-              //                    .minusDays(offset * -1)
-              //              }
-              .zip {
-                locations
-                  .foldLeft(listOfArr) { (acc, value) =>
-                    val createdAt = value.clientInfo.date
-                    val index = ((createdAt.getTime - sevenDaysAgo.getTime) / dayTime()).toInt
-                    acc(index).append(value)
-                    acc
-                  }
-                  .map { chunk =>
-                    chunk
-                      .groupBy(_.clientInfo.sessionId)
-                      .toList.length
-                  }
-              }
-          }
-        onComplete(future) {
+        onComplete(activeUser(yesterday)) {
           case Success(buf) =>
             val chart = XYLineChart(buf)
             val bytes = chart.encodeAsPNG()
@@ -78,40 +79,8 @@ object ChartRoute extends JsonSupport {
           0,
           0,
           Config.globalZonedId).toInstant)
-        val sevenDaysAgo = beforeDay(7, date)
 
-        def listOfArr: List[ArrayBuffer[Duration]] = List
-          .fill(7)(0)
-          .map { _ => ArrayBuffer.empty[Duration] }
-        val future: Future[Seq[(Int, Int)]] = Main
-          .durationRepo
-          .findBetweenDate(sevenDaysAgo, date)
-          .map { locations =>
-            (-7 to -1)
-              //              TODO: X axis
-              //              .map {
-              //                offset =>
-              //                  yesterday
-              //                    .toInstant
-              //                    .atZone(ZoneId.of("GMT+8"))
-              //                    .minusDays(offset * -1)
-              //              }
-              .zip {
-                locations
-                  .foldLeft(listOfArr) { (acc, value) =>
-                    val createdAt = value.clientInfo.date
-                    val index = ((createdAt.getTime - sevenDaysAgo.getTime) / dayTime()).toInt
-                    acc(index).append(value)
-                    acc
-                  }
-                  .map { chunk =>
-                    chunk
-                      .groupBy(_.clientInfo.sessionId)
-                      .toList.length
-                  }
-              }
-          }
-        onComplete(future) {
+        onComplete(activeUser(date)) {
           case Success(buf) =>
             val chart = XYLineChart(buf)
             val bytes = chart.encodeAsPNG()

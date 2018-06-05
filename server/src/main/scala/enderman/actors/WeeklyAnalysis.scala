@@ -8,11 +8,11 @@ import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.util.ByteString
-import enderman.{Config, JsonSupport}
+import enderman.{ Config, JsonSupport }
 import spray.json._
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 object WeeklyAnalysis extends JsonSupport {
   import DefaultJsonProtocol._
