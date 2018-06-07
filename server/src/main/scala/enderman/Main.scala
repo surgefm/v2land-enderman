@@ -29,8 +29,6 @@ object Main extends App with EnderRoute {
 
   lazy val routes: Route = enderRoutes
 
-  ipCacheActor ! IpCacheActor.GetIpGeolocation("208.80.152.201")
-
   Http().bindAndHandle(routes, "0.0.0.0", 8080)
 
   println(s"Server online at http://0.0.0.0:8080/")

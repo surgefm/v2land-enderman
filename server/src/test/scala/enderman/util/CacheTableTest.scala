@@ -8,7 +8,7 @@ class CacheTableTest extends FunSuite {
     val map = new FixSizeFIFOMap[String, Int](4)
     map.put("foo", 1)
     assert(map.getAndRemove("foo").get == 1)
-    assert(map.getAndRemove("foo") == None)
+    assert(map.getAndRemove("foo").isEmpty)
   }
 
   test("FixSizeFIFOMap put overflow") {
@@ -17,9 +17,9 @@ class CacheTableTest extends FunSuite {
       map.put(num.toString, num)
     }
     map.put("foo", 100)
-    assert(map.getAndRemove("1") == None)
+    assert(map.getAndRemove("1").isEmpty)
     map.put("bar", 100)
-    assert(map.getAndRemove("2") == None)
+    assert(map.getAndRemove("2").isEmpty)
     assert(map.getAndRemove("3").get == 3)
   }
 
@@ -41,7 +41,7 @@ class CacheTableTest extends FunSuite {
     assert(map.get("1").get == 1)
     assert(map.get("4").get == 4)
     map.put("foo", 0)
-    assert(map.get("2") == None)
+    assert(map.get("2").isEmpty)
   }
 
 }
