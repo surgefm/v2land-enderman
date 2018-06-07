@@ -2,7 +2,7 @@ package enderman
 
 import java.util.Date
 
-import enderman.models.{Business, ClientInfo, Duration, Location}
+import enderman.models._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import org.bson.types.ObjectId
 import spray.json._
@@ -21,6 +21,7 @@ trait JsonSupport extends SprayJsonSupport {
 
   }
 
+  implicit val ipInfoJsonFormat = jsonFormat14(IpInfo)
   implicit val clientInfoJsonFormat = jsonFormat5(ClientInfo)
 
   implicit object durationJsonFormat extends RootJsonFormat[Duration] {
