@@ -8,14 +8,14 @@ import enderman.util.CacheTable
 
 import scala.concurrent.duration._
 
-object IPCacheActor {
+object IpCacheActor {
 
   case class GetIpGeolocation(ip: String)
 
 }
 
 class IpCacheActor extends Actor {
-  import IPCacheActor._
+  import IpCacheActor._
   import enderman.Main.{ system, ec }
 
   lazy val log = Logging(system, this)
