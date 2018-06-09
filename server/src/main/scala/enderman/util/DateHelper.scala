@@ -4,13 +4,14 @@ import java.time.ZoneId
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 object DateHelper {
   import enderman.Config
 
   def dayTime(duration: Int = 1): Long = TimeUnit.DAYS.toMillis(duration)
   def hourTime(duration: Int = 1): Long = TimeUnit.HOURS.toMillis(duration)
+  def minuteTime(duration: Int = 1): Long = TimeUnit.MINUTES.toMillis(duration)
 
   def yesterdayDate = {
     val now = new Date().getTime
@@ -49,6 +50,13 @@ object DateHelper {
       }
 
       Duration(Date.from(targetDay.toInstant).getTime - new Date().getTime, TimeUnit.MILLISECONDS)
+    }
+
+    def delayToNextFiveMinutes = {
+      val now = new Date().getTime
+      val fiveMinutes = minuteTime(5)
+      val remain = now % fiveMinutes
+      (fiveMinutes - remain) milliseconds
     }
 
   }

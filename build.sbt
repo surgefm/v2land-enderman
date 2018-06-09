@@ -45,6 +45,7 @@ lazy val server = (project in file("server")).settings(
     "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
     "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test,
 
+    "net.ruippeixotog" %% "scala-scraper" % "2.1.0",
     "com.github.wookietreiber" %% "scala-chart" % "latest.integration"
   )
 )
