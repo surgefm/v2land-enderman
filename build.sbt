@@ -28,7 +28,7 @@ prodJsResources := {
 lazy val commonSettings = Seq(
   organization := "org.langchao",
   scalaVersion := "2.12.5",
-  version := "0.3.14"
+  version := "0.4.0"
 )
 
 lazy val server = (project in file("server")).settings(
@@ -44,6 +44,8 @@ lazy val server = (project in file("server")).settings(
     "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
     "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
     "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test,
+
+    "com.github.mauricio" %% "postgresql-async" % "0.2.21",
 
     "net.ruippeixotog" %% "scala-scraper" % "2.1.0",
     "com.github.wookietreiber" %% "scala-chart" % "latest.integration"

@@ -7,6 +7,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import enderman.actors.{ DailyAnalysis, FiveMinutesTask, IpCacheActor, WeeklyAnalysis }
+import enderman.database.{ mongo, pg }
 import enderman.util.DateHelper
 import models.repository
 
@@ -27,6 +28,7 @@ object Main extends App with EnderRoute {
   lazy val locationRepo = new repository.LocationRepository(mongo.locationCollection)
   lazy val businessRepo = new repository.BusinessRepository(mongo.businessCollection)
   lazy val contextScriptRepo = new repository.ContextScriptRepository(mongo.contextScriptCollection)
+  lazy val recordRepo = new repository.RecordRepository(pg.connectionPool)
 
   lazy val routes: Route = enderRoutes
 

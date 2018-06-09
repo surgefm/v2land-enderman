@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.{ HttpEntity, MediaTypes, StatusCodes }
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.Directives._
 import enderman.models.Duration
+import enderman.models.repository.RecordRepository
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
@@ -17,7 +18,7 @@ object ChartRoute extends JsonSupport {
   import Main.ec
   import util.DateHelper._
 
-  def activeUser(date: Date): Future[Seq[(Int, Int)]] = {
+  private def activeUser(date: Date): Future[Seq[(Int, Int)]] = {
     val sevenDaysAgo = beforeDay(7, date)
 
     def listOfArr: List[ArrayBuffer[Duration]] = List
@@ -53,6 +54,32 @@ object ChartRoute extends JsonSupport {
       }
   }
 
+  private def createEvent(date: Date): Future[Seq[(Int, Int)]] = {
+    val sevenDaysAgo = beforeDay(7, date)
+    def listOfArr: List[ArrayBuffer[RecordRepository.RecordAbstract]] = List
+      .fill(7)(0)
+      .map { _ => ArrayBuffer.empty[RecordRepository.RecordAbstract] }
+
+    Main
+      .recordRepo
+      .findBetweenDate(sevenDaysAgo, date)
+      .map { recordAbstracts =>
+        (-7 to -1)
+          .zip {
+            recordAbstracts
+              .foldLeft(listOfArr) { (acc, value) =>
+                val createdAt = value.createAt
+                val index = ((createdAt.getTime - sevenDaysAgo.getTime) / dayTime()).toInt
+                acc(index).append(value)
+                acc
+              }
+              .map { _.length }
+          }
+
+      }
+
+  }
+
   lazy val routes: Route =
     concat(
       path("v2land" / "activeUser" / "recent7days") {
@@ -81,6 +108,29 @@ object ChartRoute extends JsonSupport {
           Config.globalZonedId).toInstant)
 
         onComplete(activeUser(date)) {
+          case Success(buf) =>
+            val chart = XYLineChart(buf)
+            val bytes = chart.encodeAsPNG()
+            val entity = HttpEntity(MediaTypes.`image/png`, bytes)
+            complete(entity)
+          case Failure(e) => {
+            e.printStackTrace()
+            complete(StatusCodes.BadRequest)
+          }
+        }
+      },
+      path("v2land" / "createEvent" / IntNumber / IntNumber / IntNumber) { (year, month, day) =>
+        val date = Date.from(ZonedDateTime.of(
+          year,
+          month,
+          day,
+          0,
+          0,
+          0,
+          0,
+          Config.globalZonedId).toInstant)
+
+        onComplete(createEvent(date)) {
           case Success(buf) =>
             val chart = XYLineChart(buf)
             val bytes = chart.encodeAsPNG()
