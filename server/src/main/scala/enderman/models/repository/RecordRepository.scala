@@ -4,6 +4,7 @@ import java.util.Date
 
 import com.github.mauricio.async.db.pool.ConnectionPool
 import com.github.mauricio.async.db.postgresql.PostgreSQLConnection
+import org.joda.time.DateTime
 
 import scala.concurrent.ExecutionContext
 
@@ -34,8 +35,8 @@ class RecordRepository(
           case Some(rows) =>
             rows.map { rowData =>
               RecordAbstract(
-                rowData("data").asInstanceOf[String],
-                rowData("createAt").asInstanceOf[Date])
+                rowData(0).asInstanceOf[String],
+                rowData(1).asInstanceOf[DateTime].toDate)
             }
           case None =>
             List()
