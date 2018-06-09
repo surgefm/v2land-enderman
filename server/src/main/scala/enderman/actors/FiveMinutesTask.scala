@@ -3,7 +3,7 @@ package enderman.actors
 import akka.actor.Actor
 import akka.event.Logging
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, HttpResponse, StatusCodes }
 import akka.util.ByteString
 import enderman.Config
 import enderman.util.SlackHelper
@@ -14,7 +14,7 @@ import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL.Parse._
 import net.ruippeixotog.scalascraper.model._
 
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 object FiveMinutesTask {
 
