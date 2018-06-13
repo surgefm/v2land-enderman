@@ -3,7 +3,7 @@ package enderman.actors
 import akka.actor.Actor
 import akka.event.Logging
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, HttpResponse, StatusCodes }
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, StatusCodes}
 import akka.util.ByteString
 import enderman.Config
 import enderman.util.SlackHelper
@@ -14,7 +14,7 @@ import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL.Parse._
 import net.ruippeixotog.scalascraper.model._
 
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 object FiveMinutesTask {
 
@@ -27,6 +27,8 @@ class FiveMinutesTask extends Actor {
   import enderman.Main.{ system, ec, materializer }
 
   lazy val log = Logging(system, this)
+
+  private var lastCheckSuccess = true
 
   def receive = {
     case Tick =>
@@ -47,7 +49,9 @@ class FiveMinutesTask extends Actor {
           }
         } yield textContentBytes.utf8String
 
-        def reportError(throwable: Throwable) = {
+        def reportError(throwable: Throwable): Unit = {
+          if (!lastCheckSuccess) return
+          lastCheckSuccess = false
           val slackMsg = SlackWebHookRequest(
             "浪潮首页显示有问题哦，赶快去看看吧",
             List())
@@ -68,7 +72,21 @@ class FiveMinutesTask extends Actor {
               if (items.isEmpty) {
                 reportError(new Exception("event list is less then zero"))
               } else {
-                log.info("homepage check successful")
+                if (!lastCheckSuccess) {
+                    val slackMsg = SlackWebHookRequest(
+                      "浪潮首页已经恢复，感谢 Vincent 辛苦劳作",
+                      List())
+
+                    lastCheckSuccess = true
+                    SlackHelper.sendMessage(slackMsg) onComplete {
+                      case Success(_) =>
+                        log.info("homepage check successful")
+                      case Failure(e) =>
+                        e.printStackTrace()
+                    }
+                } else {
+                  log.info("homepage check successful")
+                }
               }
             } catch {
               case ex: Exception =>
