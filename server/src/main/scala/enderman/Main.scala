@@ -29,6 +29,7 @@ object Main extends App with EnderRoute {
   lazy val businessRepo = new repository.BusinessRepository(mongo.businessCollection)
   lazy val contextScriptRepo = new repository.ContextScriptRepository(mongo.contextScriptCollection)
   lazy val recordRepo = new repository.RecordRepository(pg.connectionPool)
+  lazy val maskedClientRepo = new repository.MaskedClientRepository(pg.connectionPool)
 
   lazy val routes: Route = enderRoutes
 

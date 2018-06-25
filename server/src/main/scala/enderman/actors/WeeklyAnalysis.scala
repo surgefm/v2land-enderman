@@ -27,12 +27,12 @@ class WeeklyAnalysis extends Actor {
       "Enderman Weekly",
       List(
         ("上周活跃用户", "activeUser"),
-        ("上周新建事件数量", "createEvent")
-      ).map {
-        case (text, eventName) =>
-          SlackImageAttachment(text,
-          s"https://enderman.v2land.net/chart/v2land/$eventName/${date.getYear}/${date.getMonthValue}/${date.getDayOfMonth}")
-      })
+        ("上周新建事件数量", "createEvent")).map {
+          case (text, eventName) =>
+            SlackImageAttachment(
+              text,
+              s"https://enderman.v2land.net/chart/v2land/$eventName/${date.getYear}/${date.getMonthValue}/${date.getDayOfMonth}")
+        })
 
     SlackHelper.sendMessage(slackMsg)
   }

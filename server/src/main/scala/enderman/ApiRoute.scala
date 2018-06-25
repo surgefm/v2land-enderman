@@ -17,6 +17,15 @@ object ApiRoute extends JsonSupport {
 
   lazy val routes: Route =
     concat(
+      path("v2land" / "maskedClient") {
+        parameters("clientId") { clientIdStr =>
+          val clientId = clientIdStr.toInt
+
+          onSuccess(Main.maskedClientRepo.findMaskedId(clientId)) { id =>
+            complete(id)
+          }
+        }
+      },
       path("v2land" / "recent7days") {
         val yesterday = yesterdayDate
         val sevenDaysAgo = beforeDay(7, yesterday)

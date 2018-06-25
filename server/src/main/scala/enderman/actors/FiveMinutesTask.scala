@@ -3,7 +3,7 @@ package enderman.actors
 import akka.actor.Actor
 import akka.event.Logging
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, HttpResponse, StatusCodes }
 import akka.util.ByteString
 import enderman.Config
 import enderman.util.SlackHelper
@@ -11,10 +11,8 @@ import enderman.util.SlackHelper.SlackWebHookRequest
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
-import net.ruippeixotog.scalascraper.dsl.DSL.Parse._
-import net.ruippeixotog.scalascraper.model._
 
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 object FiveMinutesTask {
 
@@ -73,17 +71,17 @@ class FiveMinutesTask extends Actor {
                 reportError(new Exception("event list is less then zero"))
               } else {
                 if (!lastCheckSuccess) {
-                    val slackMsg = SlackWebHookRequest(
-                      "浪潮首页已经恢复，感谢 Vincent 辛苦劳作",
-                      List())
+                  val slackMsg = SlackWebHookRequest(
+                    "浪潮首页已经恢复，感谢 Vincent 辛苦劳作",
+                    List())
 
-                    lastCheckSuccess = true
-                    SlackHelper.sendMessage(slackMsg) onComplete {
-                      case Success(_) =>
-                        log.info("homepage check successful")
-                      case Failure(e) =>
-                        e.printStackTrace()
-                    }
+                  lastCheckSuccess = true
+                  SlackHelper.sendMessage(slackMsg) onComplete {
+                    case Success(_) =>
+                      log.info("homepage check successful")
+                    case Failure(e) =>
+                      e.printStackTrace()
+                  }
                 } else {
                   log.info("homepage check successful")
                 }
