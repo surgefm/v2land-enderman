@@ -3,7 +3,7 @@ package enderman
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.Directives._
-import enderman.models.Duration
+import enderman.models.{ Duration, MaskedClient }
 import spray.json._
 
 import scala.collection.mutable.ArrayBuffer
@@ -21,8 +21,12 @@ object ApiRoute extends JsonSupport {
         parameters("clientId") { clientIdStr =>
           val clientId = clientIdStr.toInt
 
-          onSuccess(Main.maskedClientRepo.findMaskedId(clientId)) { id =>
-            complete(id)
+          if (clientId == -1) {
+            complete(MaskedClient("000000"))
+          } else {
+            onSuccess(Main.maskedClientRepo.findMaskedId(clientId)) { id =>
+              complete(MaskedClient(id))
+            }
           }
         }
       },

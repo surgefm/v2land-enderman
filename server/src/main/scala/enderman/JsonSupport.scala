@@ -23,6 +23,7 @@ trait JsonSupport extends SprayJsonSupport {
 
   implicit val ipInfoJsonFormat = jsonFormat14(IpInfo)
   implicit val clientInfoJsonFormat = jsonFormat5(ClientInfo)
+  implicit val maskedClient = jsonFormat1(MaskedClient)
 
   implicit object durationJsonFormat extends RootJsonFormat[Duration] {
 
