@@ -1,6 +1,7 @@
 package enderman
 
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.Directives._
 import enderman.models.{ Duration, MaskedClient }
@@ -18,14 +19,18 @@ object ApiRoute extends JsonSupport {
   lazy val routes: Route =
     concat(
       path("v2land" / "maskedClient") {
-        parameters("clientId") { clientIdStr =>
-          val clientId = clientIdStr.toInt
+        respondWithHeaders(List(
+          RawHeader("Access-Control-Allow-Origin", "https://langchao.org"),
+          RawHeader("Access-Control-Allow-Credentials", "true"))) {
+          parameters("clientId") { clientIdStr =>
+            val clientId = clientIdStr.toInt
 
-          if (clientId == -1) {
-            complete(MaskedClient("000000"))
-          } else {
-            onSuccess(Main.maskedClientRepo.findMaskedId(clientId)) { id =>
-              complete(MaskedClient(id))
+            if (clientId == -1) {
+              complete(MaskedClient("000000"))
+            } else {
+              onSuccess(Main.maskedClientRepo.findMaskedId(clientId)) { id =>
+                complete(MaskedClient(id))
+              }
             }
           }
         }
