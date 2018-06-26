@@ -6,7 +6,7 @@ import akka.actor.{ ActorSystem, Props }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import enderman.actors.{ DailyAnalysis, FiveMinutesTask, IpCacheActor, WeeklyAnalysis }
+import enderman.actors._
 import enderman.database.{ mongo, pg }
 import enderman.util.DateHelper
 import models.repository
@@ -23,6 +23,7 @@ object Main extends App with EnderRoute {
   val dailyAnalysisActor = system.actorOf(Props[DailyAnalysis], "dailyAnalysis")
   val weeklyAnalysisActor = system.actorOf(Props[WeeklyAnalysis], "weeklyAnalysis")
   val ipCacheActor = system.actorOf(Props[IpCacheActor], "ipCacheActor")
+  val maskedClientActor = system.actorOf(Props[MaskedClientIdActor], "maskedClientIdActor")
 
   lazy val durationRepo = new repository.DurationRepository(mongo.durationCollection)
   lazy val locationRepo = new repository.LocationRepository(mongo.locationCollection)
