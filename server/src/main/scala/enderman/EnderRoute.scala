@@ -206,35 +206,6 @@ trait EnderRoute extends JsonSupport {
           }
         }
       },
-      path("contextscript") {
-        post {
-          headerValueByName("X-ENDERMAN-TOKEN") { tokenValue =>
-            val verifyToken = Config.config.getString("enderman.scriptUploadToken")
-            if (tokenValue == verifyToken) {
-              fileUpload("bundle") {
-                case (_, source) =>
-                  val future: Future[String] =
-                    source
-                      .runFold("") { (acc, n) => acc + n.utf8String }
-                      .flatMap({ fileContent =>
-                        contextScriptRepo.insertOne(ContextScript(
-                          new ObjectId,
-                          fileContent))
-                      })
-
-                  onComplete(future) {
-                    case Success(_) =>
-                      complete("")
-                    case Failure(e) =>
-                      complete("")
-                  }
-              }
-            } else {
-              complete(StatusCodes.BadRequest)
-            }
-          }
-        }
-      },
       path("public" / Remaining) { pathString =>
         if (pathString.endsWith(".js") || pathString.endsWith(".map")) {
           getFromResource(pathString)
