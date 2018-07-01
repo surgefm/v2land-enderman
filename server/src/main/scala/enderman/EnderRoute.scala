@@ -15,11 +15,13 @@ import enderman.models.{ ContextScript, repository }
 import akka.util.{ ByteString, Timeout }
 import java.util.UUID.randomUUID
 
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpEntity.Strict
 
 import scala.util.{ Failure, Success }
 import akka.http.scaladsl.model.headers.{ HttpCookie, HttpCookiePair, RawHeader, `Content-Type` }
 import akka.stream.ActorMaterializer
+import akka.pattern.pipe
 import org.bson.types.ObjectId
 import spray.json.{ JsArray, JsValue, JsonParser, deserializationError }
 
@@ -186,6 +188,14 @@ trait EnderRoute extends JsonSupport {
       },
       pathPrefix("chart") {
         ChartRoute.routes
+      },
+      path("enderpearl" / Remaining) { filename =>
+        val req = Http().singleRequest(
+          HttpRequest(uri = s"${Config.staticHost}/js/$filename"))
+
+        onSuccess(req) { resp =>
+          complete(resp)
+        }
       },
       path("enderpearl.js") {
         onComplete(contextScriptRepo.latestContent) {

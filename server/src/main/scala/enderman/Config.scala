@@ -11,6 +11,8 @@ object Config {
 
   lazy val slackHook = config.getString("enderman.slackHook")
 
+  lazy val staticHost = config.getString("enderman.staticHost")
+
   lazy val pgUri = config.getString("postgresql.uri")
 
   val globalZonedId = ZoneId.of("GMT+8")
