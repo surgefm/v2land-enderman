@@ -43,22 +43,6 @@ trait EnderRoute extends JsonSupport {
   private val optionalSessionCookieDirective: Directive1[Option[HttpCookiePair]] =
     optionalCookie(sessionIdKey)
 
-  // check the existence sessionId
-  // generate new sessionId if not exist
-  private val sessionDirective: Directive1[String] =
-    optionalSessionCookieDirective.flatMap {
-      case Some(cookie) => provide(cookie.value)
-      case None => {
-        val newId = randomUUID().toString
-
-        setCookie(HttpCookie(
-          sessionIdKey,
-          newId,
-          expires = Some(DateTime.now + TimeUnit.DAYS.toMillis(365 * 2)),
-          domain = Some(".langchao.org"))).tmap(_ => newId)
-      };
-    }
-
   private lazy val checkOrigin = Config.config.getString("enderman.trackOrigin")
 
   private val originHeaderDirective: Directive0 =
@@ -72,15 +56,15 @@ trait EnderRoute extends JsonSupport {
     }
 
   private val clientInfoDirective: Directive1[models.ClientInfo] =
-    sessionDirective.flatMap { sessionId =>
-      extractClientIP.flatMap { clientIp =>
-        headerValueByName("User-Agent").map { userAgent =>
-          models.ClientInfo(
-            clientIp.toOption.map(_.getHostAddress).getOrElse("unknown"),
-            userAgent,
-            sessionId)
-        }
-      }
+    for {
+      sessionId <- parameter("u")
+      clientIp <- extractClientIP
+      userAgent <- headerValueByName("User-Agent")
+    } yield {
+      models.ClientInfo(
+        clientIp.toOption.map(_.getHostAddress).getOrElse("unknown"),
+        userAgent,
+        sessionId)
     }
 
   def durationRepo: repository.DurationRepository
