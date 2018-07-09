@@ -14,6 +14,7 @@ import akka.http.scaladsl.model._
 import enderman.models.{ ContextScript, repository }
 import akka.util.{ ByteString, Timeout }
 import java.util.UUID.randomUUID
+import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpEntity.Strict
@@ -46,11 +47,15 @@ trait EnderRoute extends JsonSupport {
   // generate new sessionId if not exist
   private val sessionDirective: Directive1[String] =
     optionalSessionCookieDirective.flatMap {
-      case Some(cookie) => provide(cookie.value);
+      case Some(cookie) => provide(cookie.value)
       case None => {
         val newId = randomUUID().toString
 
-        setCookie(HttpCookie(sessionIdKey, newId)).tmap(_ => newId)
+        setCookie(HttpCookie(
+          sessionIdKey,
+          newId,
+          expires = Some(DateTime.now + TimeUnit.DAYS.toMillis(365 * 2)),
+          domain = Some(".langchao.org"))).tmap(_ => newId)
       };
     }
 
