@@ -96,88 +96,100 @@ trait EnderRoute extends JsonSupport {
               RawHeader("Access-Control-Allow-Credentials", "true"))) {
               concat(
                 path("duration") {
-                  get {
-                    parameters("userId".?, "actionType".as[Int]) { (userIdOpt, actionType) =>
-                      val duration = models.Duration(
-                        new ObjectId(),
-                        actionType,
-                        clientInfo.copy(userId = userIdOpt))
-                      onComplete(durationRepo.insertOne(duration)) {
-                        case Success(_) => complete("")
-                        case Failure(e) => {
-                          e.printStackTrace()
-                          complete(StatusCodes.BadRequest)
-                        }
-                      }
-                    }
-                  }
-                },
-                path("location") {
-                  get {
-                    parameters("url", "userId".?, "redirectFrom".?, "referrer".?) {
-                      (encodedUrl, userIdOpt, redirectFrom, referrer) =>
-                        val url = decodeBase64(encodedUrl)
-                        val location = models.Location(
+                  options {
+                    complete("")
+                  } ~
+                    get {
+                      parameters("userId".?, "actionType".as[Int]) { (userIdOpt, actionType) =>
+                        val duration = models.Duration(
                           new ObjectId(),
-                          url,
-                          redirectFrom.map(decodeBase64),
-                          referrer.map(decodeBase64),
+                          actionType,
                           clientInfo.copy(userId = userIdOpt))
-                        onComplete(locationRepo.insertOne(location)) {
+                        onComplete(durationRepo.insertOne(duration)) {
                           case Success(_) => complete("")
                           case Failure(e) => {
                             e.printStackTrace()
                             complete(StatusCodes.BadRequest)
                           }
                         }
-                    }
-                  }
-                },
-                path("business") {
-                  post {
-                    entity(as[models.Business]) { business =>
-                      onComplete(businessRepo.insertOne(business)) {
-                        case Success(_) => complete("")
-                        case Failure(e) => {
-                          e.printStackTrace()
-                          complete(StatusCodes.BadRequest)
-                        }
                       }
                     }
-                  }
                 },
-                path("chunk") {
-                  post {
-                    entity(as[String]) { jsonString =>
-                      val jsonAst = JsonParser(jsonString)
-                      jsonAst match {
-                        case JsArray(elements: Vector[JsValue]) => {
-                          val futures = elements.map { chunk =>
-                            val obj = chunk.asJsObject("chunk must be a JsObject")
-                            val chunkType = obj.fields("type").toString
-                            chunkType match {
-                              case "duration" =>
-                                durationRepo.insertOne(obj.fields("value").convertTo[models.Duration]);
-                              case "location" =>
-                                locationRepo.insertOne(obj.fields("value").convertTo[models.Location]);
-                              case "business" =>
-                                businessRepo.insertOne(obj.fields("value").convertTo[models.Business]);
-                            }
-                          }
-                          val finalFuture = Future.sequence(futures)
-                          onComplete(finalFuture) {
-                            case Success(_) =>
-                              complete("")
+                path("location") {
+                  options {
+                    complete("")
+                  } ~
+                    get {
+                      parameters("url", "userId".?, "redirectFrom".?, "referrer".?) {
+                        (encodedUrl, userIdOpt, redirectFrom, referrer) =>
+                          val url = decodeBase64(encodedUrl)
+                          val location = models.Location(
+                            new ObjectId(),
+                            url,
+                            redirectFrom.map(decodeBase64),
+                            referrer.map(decodeBase64),
+                            clientInfo.copy(userId = userIdOpt))
+                          onComplete(locationRepo.insertOne(location)) {
+                            case Success(_) => complete("")
                             case Failure(e) => {
                               e.printStackTrace()
                               complete(StatusCodes.BadRequest)
                             }
                           }
-                        }
-                        case _ => deserializationError("Array expected")
                       }
                     }
-                  }
+                },
+                path("business") {
+                  options {
+                    complete("")
+                  } ~
+                    post {
+                      entity(as[models.Business]) { business =>
+                        onComplete(businessRepo.insertOne(business)) {
+                          case Success(_) => complete("")
+                          case Failure(e) => {
+                            e.printStackTrace()
+                            complete(StatusCodes.BadRequest)
+                          }
+                        }
+                      }
+                    }
+                },
+                path("chunk") {
+                  options {
+                    complete("")
+                  } ~
+                    post {
+                      entity(as[String]) { jsonString =>
+                        val jsonAst = JsonParser(jsonString)
+                        jsonAst match {
+                          case JsArray(elements: Vector[JsValue]) => {
+                            val futures = elements.map { chunk =>
+                              val obj = chunk.asJsObject("chunk must be a JsObject")
+                              val chunkType = obj.fields("type").toString
+                              chunkType match {
+                                case "duration" =>
+                                  durationRepo.insertOne(obj.fields("value").convertTo[models.Duration]);
+                                case "location" =>
+                                  locationRepo.insertOne(obj.fields("value").convertTo[models.Location]);
+                                case "business" =>
+                                  businessRepo.insertOne(obj.fields("value").convertTo[models.Business]);
+                              }
+                            }
+                            val finalFuture = Future.sequence(futures)
+                            onComplete(finalFuture) {
+                              case Success(_) =>
+                                complete("")
+                              case Failure(e) => {
+                                e.printStackTrace()
+                                complete(StatusCodes.BadRequest)
+                              }
+                            }
+                          }
+                          case _ => deserializationError("Array expected")
+                        }
+                      }
+                    }
                 })
             }
           }
