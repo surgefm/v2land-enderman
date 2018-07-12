@@ -80,7 +80,7 @@ trait JsonSupport extends SprayJsonSupport {
       JsObject(
         "_id" -> business._id.toString.toJson,
         "action" -> JsString(business.action),
-        "meta" -> business.meta.parseJson,
+        "meta" -> business.meta.parseJson.asJsObject(),
         "clientInfo" -> business.clientInfo.toJson,
       )
 
@@ -92,7 +92,7 @@ trait JsonSupport extends SprayJsonSupport {
           case None => new ObjectId();
         },
         fields("action").convertTo[String],
-        fields("meta").asJsObject("meta field should be object").convertTo[String],
+        fields("meta").asJsObject("meta field should be object").compactPrint,
         fields("clientInfo").convertTo[ClientInfo]
       )
     }

@@ -11,20 +11,18 @@ import akka.http.scaladsl.server.directives.MethodDirectives.post
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import akka.http.scaladsl.server.directives.PathDirectives.path
 import akka.http.scaladsl.model._
-import enderman.models.{ ContextScript, repository }
+import enderman.models.repository
 import akka.util.{ ByteString, Timeout }
-import java.util.UUID.randomUUID
-import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpEntity.Strict
 
 import scala.util.{ Failure, Success }
-import akka.http.scaladsl.model.headers.{ HttpCookie, HttpCookiePair, RawHeader, `Content-Type` }
+import akka.http.scaladsl.model.headers.{ HttpCookiePair, RawHeader }
 import akka.stream.ActorMaterializer
-import akka.pattern.pipe
 import org.bson.types.ObjectId
 import spray.json.{ JsArray, JsValue, JsonParser, deserializationError }
+import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -38,20 +36,20 @@ trait EnderRoute extends JsonSupport {
 
   implicit lazy val timeout = Timeout(5.seconds) // usually we'd obtain the timeout from the system's configuration
 
-  private val sessionIdKey = "sessionId"
-
-  private val optionalSessionCookieDirective: Directive1[Option[HttpCookiePair]] =
-    optionalCookie(sessionIdKey)
-
   private lazy val checkOrigin = Config.config.getString("enderman.trackOrigin")
 
   private val originHeaderDirective: Directive0 =
-    headerValueByName("Origin").flatMap { value =>
-      if (value == checkOrigin) {
-        pass
+    optionalHeaderValueByName("Origin").flatMap { value =>
+      if (Config.isProduction) {
+        value match {
+          case Some(headerValue) if headerValue == checkOrigin =>
+            pass
+          case None =>
+            log.error("[production mode origin check] not a request from " + checkOrigin)
+            reject
+        }
       } else {
-        log.error("not a request from " + checkOrigin)
-        reject
+        pass
       }
     }
 
@@ -79,15 +77,13 @@ trait EnderRoute extends JsonSupport {
     concat(
       pathPrefix("v2land") {
         originHeaderDirective {
-          clientInfoDirective { clientInfo =>
-            respondWithHeaders(List(
-              RawHeader("Access-Control-Allow-Origin", "https://langchao.org"),
-              RawHeader("Access-Control-Allow-Credentials", "true"))) {
-              concat(
-                path("duration") {
-                  options {
-                    complete("")
-                  } ~
+          respondWithHeaders(List(
+            RawHeader("Access-Control-Allow-Origin", "https://langchao.org"),
+            RawHeader("Access-Control-Allow-Credentials", "true"))) {
+            concat(
+              clientInfoDirective { clientInfo =>
+                concat(
+                  path("duration") {
                     get {
                       parameters("userId".?, "actionType".as[Int]) { (userIdOpt, actionType) =>
                         val duration = models.Duration(
@@ -103,11 +99,8 @@ trait EnderRoute extends JsonSupport {
                         }
                       }
                     }
-                },
-                path("location") {
-                  options {
-                    complete("")
-                  } ~
+                  },
+                  path("location") {
                     get {
                       parameters("url", "userId".?, "redirectFrom".?, "referrer".?) {
                         (encodedUrl, userIdOpt, redirectFrom, referrer) =>
@@ -127,60 +120,56 @@ trait EnderRoute extends JsonSupport {
                           }
                       }
                     }
-                },
-                path("business") {
-                  options {
-                    complete("")
-                  } ~
-                    post {
-                      entity(as[models.Business]) { business =>
-                        onComplete(businessRepo.insertOne(business)) {
-                          case Success(_) => complete("")
-                          case Failure(e) => {
-                            e.printStackTrace()
-                            complete(StatusCodes.BadRequest)
-                          }
-                        }
-                      }
-                    }
-                },
-                path("chunk") {
-                  options {
-                    complete("")
-                  } ~
-                    post {
+                  })
+              },
+              path("chunk") {
+                post {
+                  extractClientIP { clientIp =>
+                    headerValueByName("User-Agent") { ua =>
                       entity(as[String]) { jsonString =>
+                        import spray.json._
+
                         val jsonAst = JsonParser(jsonString)
-                        jsonAst match {
+                        val data = jsonAst.asJsObject("root structure must be JsObject")
+
+                        val sid = data.fields("u").toString
+                        val userId = data.fields.get("userId").map(_.toString)
+
+                        val clientInfo = models.ClientInfo(
+                          clientIp.toOption.map(_.getHostAddress).getOrElse("unknown"),
+                          ua,
+                          sid,
+                          userId)
+
+                        val finalFuture: Future[Seq[String]] = data.fields("content") match {
                           case JsArray(elements: Vector[JsValue]) => {
-                            val futures = elements.map { chunk =>
-                              val obj = chunk.asJsObject("chunk must be a JsObject")
-                              val chunkType = obj.fields("type").toString
-                              chunkType match {
-                                case "duration" =>
-                                  durationRepo.insertOne(obj.fields("value").convertTo[models.Duration]);
-                                case "location" =>
-                                  locationRepo.insertOne(obj.fields("value").convertTo[models.Location]);
-                                case "business" =>
-                                  businessRepo.insertOne(obj.fields("value").convertTo[models.Business]);
-                              }
+                            val futures = elements.map {
+                              case JsArray(tuple: Vector[JsValue]) =>
+                                val chunkType = tuple(0).convertTo[Int]
+                                val tmp = tuple(1).asJsObject("value muse be JsObject")
+                                val obj = tmp.copy(fields = tmp.fields + ("clientInfo" -> clientInfo.toJson))
+                                chunkType match {
+                                  case 0 =>
+                                    durationRepo.insertOne(obj.convertTo[models.Duration]);
+                                  case 1 =>
+                                    locationRepo.insertOne(obj.convertTo[models.Location]);
+                                  case 2 =>
+                                    businessRepo.insertOne(obj.convertTo[models.Business]);
+                                }
+                              case _ =>
+                                Future { deserializationError("Array expected for content") }
                             }
-                            val finalFuture = Future.sequence(futures)
-                            onComplete(finalFuture) {
-                              case Success(_) =>
-                                complete("")
-                              case Failure(e) => {
-                                e.printStackTrace()
-                                complete(StatusCodes.BadRequest)
-                              }
-                            }
+                            Future.sequence(futures)
                           }
-                          case _ => deserializationError("Array expected")
+                          case _ =>
+                            Future { deserializationError("Array expected for content") }
                         }
+                        onSuccess(finalFuture) { _ => complete("") }
                       }
                     }
-                })
-            }
+                  }
+                }
+              })
           }
         }
       },
@@ -196,15 +185,6 @@ trait EnderRoute extends JsonSupport {
 
         onSuccess(req) { resp =>
           complete(resp)
-        }
-      },
-      path("enderpearl.js") {
-        onComplete(contextScriptRepo.latestContent) {
-          case Success(content) => complete(content)
-          case Failure(e) => {
-            e.printStackTrace()
-            complete(StatusCodes.BadRequest)
-          }
         }
       },
       path("public" / Remaining) { pathString =>
