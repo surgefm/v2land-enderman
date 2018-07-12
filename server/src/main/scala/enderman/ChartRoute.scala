@@ -8,6 +8,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.Directives._
 import enderman.models.Duration
 import enderman.models.repository.RecordRepository
+import enderman.util.LRUMap
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
@@ -18,25 +19,17 @@ object ChartRoute extends JsonSupport {
   import Main.ec
   import util.DateHelper._
 
-  private def activeUser(date: Date): Future[Seq[(Int, Int)]] = {
-    val sevenDaysAgo = beforeDay(7, date)
+  private def activeUser(date: Date, duration: Int = 7): Future[Seq[(Int, Int)]] = {
+    val sevenDaysAgo = beforeDay(duration, date)
 
     def listOfArr: List[ArrayBuffer[Duration]] = List
-      .fill(7)(0)
+      .fill(duration)(0)
       .map { _ => ArrayBuffer.empty[Duration] }
     Main
       .durationRepo
       .findBetweenDate(sevenDaysAgo, date)
       .map { locations =>
-        (-7 to -1)
-          //              TODO: X axis
-          //              .map {
-          //                offset =>
-          //                  yesterday
-          //                    .toInstant
-          //                    .atZone(ZoneId.of("GMT+8"))
-          //                    .minusDays(offset * -1)
-          //              }
+        ((-1 * duration) to -1)
           .zip {
             locations
               .foldLeft(listOfArr) { (acc, value) =>
@@ -54,17 +47,17 @@ object ChartRoute extends JsonSupport {
       }
   }
 
-  private def createEvent(date: Date): Future[Seq[(Int, Int)]] = {
-    val sevenDaysAgo = beforeDay(7, date)
+  private def createEvent(date: Date, duration: Int = 7): Future[Seq[(Int, Int)]] = {
+    val sevenDaysAgo = beforeDay(duration, date)
     def listOfArr: List[ArrayBuffer[RecordRepository.RecordAbstract]] = List
-      .fill(7)(0)
+      .fill(duration)(0)
       .map { _ => ArrayBuffer.empty[RecordRepository.RecordAbstract] }
 
     Main
       .recordRepo
       .findBetweenDate(sevenDaysAgo, date)
       .map { recordAbstracts =>
-        (-7 to -1)
+        ((-1 * duration) to -1)
           .zip {
             recordAbstracts
               .foldLeft(listOfArr) { (acc, value) =>
@@ -80,20 +73,42 @@ object ChartRoute extends JsonSupport {
 
   }
 
+  private val recent30DaysActiveUserCache = new LRUMap[Long, Array[Byte]](8)
+  private val recent30DaysCreateEventCache = new LRUMap[Long, Array[Byte]](8)
+
   lazy val routes: Route =
     concat(
       path("v2land" / "activeUser" / "recent7days") {
         val yesterday = yesterdayDate
-        onComplete(activeUser(yesterday)) {
-          case Success(buf) =>
-            val chart = XYLineChart(buf)
-            val bytes = chart.encodeAsPNG()
+
+        val bytesFuture = for {
+          buf <- activeUser(yesterday)
+          chart = XYLineChart(buf)
+        } yield chart.encodeAsPNG()
+
+        onSuccess(bytesFuture) { bytes =>
+          val entity = HttpEntity(MediaTypes.`image/png`, bytes)
+          complete(entity)
+        }
+      },
+      path("v2land" / "activeUser" / "recent30days") {
+        val yesterday = yesterdayDate
+
+        recent30DaysActiveUserCache.get(yesterday.getTime) match {
+          case Some(bytes) =>
             val entity = HttpEntity(MediaTypes.`image/png`, bytes)
             complete(entity)
-          case Failure(e) => {
-            e.printStackTrace()
-            complete(StatusCodes.BadRequest)
-          }
+          case None =>
+            val bytesFuture = for {
+              buf <- activeUser(yesterday, 30)
+              chart = XYLineChart(buf)
+            } yield chart.encodeAsPNG()
+
+            onSuccess(bytesFuture) { bytes =>
+              recent30DaysActiveUserCache.put(yesterday.getTime, bytes)
+              val entity = HttpEntity(MediaTypes.`image/png`, bytes)
+              complete(entity)
+            }
         }
       },
       path("v2land" / "activeUser" / IntNumber / IntNumber / IntNumber) { (year, month, day) =>
@@ -107,16 +122,21 @@ object ChartRoute extends JsonSupport {
           0,
           Config.globalZonedId).toInstant)
 
-        onComplete(activeUser(date)) {
-          case Success(buf) =>
-            val chart = XYLineChart(buf)
-            val bytes = chart.encodeAsPNG()
+        recent30DaysActiveUserCache.get(date.getTime) match {
+          case Some(bytes) =>
             val entity = HttpEntity(MediaTypes.`image/png`, bytes)
             complete(entity)
-          case Failure(e) => {
-            e.printStackTrace()
-            complete(StatusCodes.BadRequest)
-          }
+          case None =>
+            val bytesFuture = for {
+              buf <- activeUser(date, 30)
+              chart = XYLineChart(buf)
+            } yield chart.encodeAsPNG()
+
+            onSuccess(bytesFuture) { bytes =>
+              recent30DaysActiveUserCache.put(date.getTime, bytes)
+              val entity = HttpEntity(MediaTypes.`image/png`, bytes)
+              complete(entity)
+            }
         }
       },
       path("v2land" / "createEvent" / IntNumber / IntNumber / IntNumber) { (year, month, day) =>
@@ -130,16 +150,21 @@ object ChartRoute extends JsonSupport {
           0,
           Config.globalZonedId).toInstant)
 
-        onComplete(createEvent(date)) {
-          case Success(buf) =>
-            val chart = XYLineChart(buf)
-            val bytes = chart.encodeAsPNG()
+        recent30DaysCreateEventCache.get(date.getTime) match {
+          case Some(bytes) =>
             val entity = HttpEntity(MediaTypes.`image/png`, bytes)
             complete(entity)
-          case Failure(e) => {
-            e.printStackTrace()
-            complete(StatusCodes.BadRequest)
-          }
+          case None =>
+            val bytesFuture = for {
+              buf <- createEvent(date, 30)
+              chart = XYLineChart(buf)
+            } yield chart.encodeAsPNG()
+
+            onSuccess(bytesFuture) { bytes =>
+              recent30DaysCreateEventCache.put(date.getTime, bytes)
+              val entity = HttpEntity(MediaTypes.`image/png`, bytes)
+              complete(entity)
+            }
         }
       })
 

@@ -123,6 +123,9 @@ trait EnderRoute extends JsonSupport {
                   })
               },
               path("chunk") {
+                options {
+                  complete("")
+                } ~
                 post {
                   extractClientIP { clientIp =>
                     headerValueByName("User-Agent") { ua =>
