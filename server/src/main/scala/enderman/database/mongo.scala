@@ -1,9 +1,11 @@
 package enderman.database
 
+import java.util.Date
+
 import enderman.{ Config, JsonSupport }
 import enderman.models._
-import org.bson.{ BsonReader, BsonWriter, json }
-import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
+import org.bson.{ BsonReader, BsonType, BsonWriter, json }
+import org.bson.codecs.{ Codec, DecoderContext, DocumentCodec, EncoderContext }
 import org.bson.codecs.configuration.CodecRegistries._
 import org.mongodb.scala._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
@@ -12,7 +14,12 @@ import org.mongodb.scala.bson.codecs.Macros._
 object mongo {
 
   object BusinessCodec extends Codec[Business] with JsonSupport {
-    import spray.json._
+
+    private lazy val clientInfoCodec: Codec[ClientInfo] =
+      codecRegistry.get(classOf[ClientInfo])
+
+    private lazy val documentCodec: Codec[bson.Document] =
+      codecRegistry.get(classOf[bson.Document])
 
     override def encode(writer: BsonWriter, value: Business, encoderContext: EncoderContext): Unit = {
 
@@ -25,21 +32,7 @@ object mongo {
       writer.pipe(new json.JsonReader(value.meta))
       writer.writeName("clientInfo")
 
-      writer.writeStartDocument()
-      writer.writeName("clientIp")
-      writer.writeString(value.clientInfo.clientIp)
-      writer.writeName("userAgent")
-      writer.writeString(value.clientInfo.userAgent)
-      writer.writeName("sessionId")
-      writer.writeString(value.clientInfo.sessionId)
-      writer.writeName("userId");
-      value.clientInfo.userId match {
-        case Some(idVal) => writer.writeString(idVal)
-        case None => writer.writeNull()
-      }
-      writer.writeName("date")
-      writer.writeDateTime(value.clientInfo.date.getTime)
-      writer.writeEndDocument()
+      clientInfoCodec.encode(writer, value.clientInfo, encoderContext)
 
       writer.writeEndDocument()
     }
@@ -53,20 +46,18 @@ object mongo {
       reader.readName("action")
       val action = reader.readString()
       reader.readName("meta")
-      val meta = reader.readJavaScript("meta")
+      val metaDoc = documentCodec.decode(reader, decoderContext)
       reader.readName("clientInfo")
-      val clientInfo = reader.readJavaScript("clientInfo")
+      val clientInfo = clientInfoCodec.decode(reader, decoderContext)
       reader.readEndDocument()
 
       Business(
         _id,
         action,
-        meta,
-        clientInfo.parseJson.convertTo[ClientInfo])
-      //      val jsonStr = reader.readJavaScript()
-      //      val jsonData = jsonStr.parseJson
-      //      jsonData.convertTo[Business]
+        metaDoc.toString(),
+        clientInfo)
     }
+
   }
 
   lazy val mongoClient = MongoClient(Config.config.getString("mongo.uri"))
