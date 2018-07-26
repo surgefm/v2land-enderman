@@ -218,7 +218,7 @@ object ChartRoute extends JsonSupport {
           Config.globalZonedId).toInstant)
 
         val bytesFuture = for {
-          buf <- createEvent(date, 30)
+          buf <- loginUser(date, 30)
           chart = XYLineChart(buf)
         } yield chart.encodeAsPNG()
 
