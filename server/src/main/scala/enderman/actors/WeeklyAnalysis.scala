@@ -27,6 +27,7 @@ class WeeklyAnalysis extends Actor {
       "Enderman Weekly",
       List(
         ("上周活跃用户", "activeUser"),
+        ("已登录用户占比", "loginUser"),
         ("上周新建事件数量", "createEvent")).map {
           case (text, eventName) =>
             SlackImageAttachment(
