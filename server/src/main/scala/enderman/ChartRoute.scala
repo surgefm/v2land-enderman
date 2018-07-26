@@ -73,6 +73,45 @@ object ChartRoute extends JsonSupport {
 
   }
 
+  private def loginUser(date: Date, duration: Int = 7): Future[Seq[(Int, Double)]] = {
+    val sevenDaysAgo = beforeDay(duration, date)
+
+    def listOfArr: List[ArrayBuffer[Duration]] = List
+      .fill(duration)(0)
+      .map { _ => ArrayBuffer.empty[Duration] }
+
+    Main
+      .durationRepo
+      .findBetweenDate(sevenDaysAgo, date)
+      .map { locations =>
+        ((-1 * duration) to -1)
+          .zip {
+            locations
+              .foldLeft(listOfArr) { (acc, value) =>
+                val createdAt = value.clientInfo.date
+                val index = ((createdAt.getTime - sevenDaysAgo.getTime) / dayTime()).toInt
+                acc(index).append(value)
+                acc
+              }
+              .map { chunk =>
+                val tuples = chunk
+                  .groupBy(_.clientInfo.sessionId)
+                  .toList
+                  .map {
+                    case (sessionId, durations) =>
+                      (sessionId, durations.exists(_.clientInfo.userId.isDefined))
+                  }
+
+                val children = tuples.filter {
+                  case (sessionId, hasUserId) => hasUserId
+                }
+
+                children.length * 1.0 / tuples.length
+              }
+          }
+      }
+  }
+
   private val recent30DaysActiveUserCache = new LRUMap[Long, Array[Byte]](8)
   private val recent30DaysCreateEventCache = new LRUMap[Long, Array[Byte]](8)
 
@@ -165,6 +204,27 @@ object ChartRoute extends JsonSupport {
               val entity = HttpEntity(MediaTypes.`image/png`, bytes)
               complete(entity)
             }
+        }
+      },
+      path("v2land" / "loginUser" / IntNumber / IntNumber / IntNumber) { (year, month, day) =>
+        val date = Date.from(ZonedDateTime.of(
+          year,
+          month,
+          day,
+          0,
+          0,
+          0,
+          0,
+          Config.globalZonedId).toInstant)
+
+        val bytesFuture = for {
+          buf <- createEvent(date, 30)
+          chart = XYLineChart(buf)
+        } yield chart.encodeAsPNG()
+
+        onSuccess(bytesFuture) { bytes =>
+          val entity = HttpEntity(MediaTypes.`image/png`, bytes)
+          complete(entity)
         }
       })
 
