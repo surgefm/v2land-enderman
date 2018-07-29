@@ -79,7 +79,9 @@ trait EnderRoute extends JsonSupport {
         originHeaderDirective {
           respondWithHeaders(List(
             RawHeader("Access-Control-Allow-Origin", "https://langchao.org"),
-            RawHeader("Access-Control-Allow-Credentials", "true"))) {
+            RawHeader("Access-Control-Allow-Credentials", "true"),
+            RawHeader("Access-Control-Allow-Headers", "Content-Type"),
+            RawHeader("Access-Control-Expose-Headers", "*"))) {
             concat(
               clientInfoDirective { clientInfo =>
                 concat(
