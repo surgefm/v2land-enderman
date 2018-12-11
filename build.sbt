@@ -28,7 +28,7 @@ prodJsResources := {
 lazy val commonSettings = Seq(
   organization := "org.langchao",
   scalaVersion := "2.12.5",
-  version := "0.5.2"
+  version := "0.5.3"
 )
 
 lazy val server = (project in file("server")).settings(
@@ -59,7 +59,7 @@ lazy val testServer = (project in file("build/test"))
     (resources in Compile) := {
       (resources in Compile).value ++ (jsResources in LocalRootProject).value
     },
-    dockerBaseImage := "openjdk:8-jre",
+    dockerBaseImage := "openjdk:11.0.1-jre",
     dockerUpdateLatest := true,
     packageName in Docker := "enderman"
   ).enablePlugins(JavaAppPackaging)
@@ -74,7 +74,7 @@ lazy val prodServer = (project in file("build/prod"))
     (resources in Compile) := {
       (resources in Compile).value ++ (prodJsResources in LocalRootProject).value
     },
-    dockerBaseImage := "openjdk:8-jre",
+    dockerBaseImage := "openjdk:11.0.1-jre",
     dockerUpdateLatest := true,
     packageName in Docker := "enderman"
   ).enablePlugins(JavaAppPackaging)

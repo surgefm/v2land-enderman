@@ -4,7 +4,9 @@ scala:
 services:
   - docker
 before_install:
-  - nvm install 9
+  - nvm install 10.13.0
+jdk:
+  - openjdk11
 script:
   - sbt -jvm-opts travis/jvmopts.compile client/fullOptJS
   - sbt -jvm-opts travis/jvmopts.compile prodServer/test
