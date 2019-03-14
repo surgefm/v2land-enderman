@@ -128,52 +128,52 @@ trait EnderRoute extends JsonSupport {
                 options {
                   complete("")
                 } ~
-                post {
-                  extractClientIP { clientIp =>
-                    headerValueByName("User-Agent") { ua =>
-                      entity(as[String]) { jsonString =>
-                        import spray.json._
+                  post {
+                    extractClientIP { clientIp =>
+                      headerValueByName("User-Agent") { ua =>
+                        entity(as[String]) { jsonString =>
+                          import spray.json._
 
-                        val jsonAst = JsonParser(jsonString)
-                        val data = jsonAst.asJsObject("root structure must be JsObject")
+                          val jsonAst = JsonParser(jsonString)
+                          val data = jsonAst.asJsObject("root structure must be JsObject")
 
-                        val sid = data.fields("u").toString
-                        val userId = data.fields.get("userId").map(_.toString)
+                          val sid = data.fields("u").toString
+                          val userId = data.fields.get("userId").map(_.toString)
 
-                        val clientInfo = models.ClientInfo(
-                          clientIp.toOption.map(_.getHostAddress).getOrElse("unknown"),
-                          ua,
-                          sid,
-                          userId)
+                          val clientInfo = models.ClientInfo(
+                            clientIp.toOption.map(_.getHostAddress).getOrElse("unknown"),
+                            ua,
+                            sid,
+                            userId)
 
-                        val finalFuture: Future[Seq[String]] = data.fields("content") match {
-                          case JsArray(elements: Vector[JsValue]) => {
-                            val futures = elements.map {
-                              case JsArray(tuple: Vector[JsValue]) =>
-                                val chunkType = tuple(0).convertTo[Int]
-                                val tmp = tuple(1).asJsObject("value muse be JsObject")
-                                val obj = tmp.copy(fields = tmp.fields + ("clientInfo" -> clientInfo.toJson))
-                                chunkType match {
-                                  case 0 =>
-                                    durationRepo.insertOne(obj.convertTo[models.Duration]);
-                                  case 1 =>
-                                    locationRepo.insertOne(obj.convertTo[models.Location]);
-                                  case 2 =>
-                                    businessRepo.insertOne(obj.convertTo[models.Business]);
-                                }
-                              case _ =>
-                                Future { deserializationError("Array expected for content") }
+                          val finalFuture: Future[Seq[String]] = data.fields("content") match {
+                            case JsArray(elements: Vector[JsValue]) => {
+                              val futures = elements.map {
+                                case JsArray(tuple: Vector[JsValue]) =>
+                                  val chunkType = tuple(0).convertTo[Int]
+                                  val tmp = tuple(1).asJsObject("value muse be JsObject")
+                                  val obj = tmp.copy(fields = tmp.fields + ("clientInfo" -> clientInfo.toJson))
+                                  chunkType match {
+                                    case 0 =>
+                                      durationRepo.insertOne(obj.convertTo[models.Duration]);
+                                    case 1 =>
+                                      locationRepo.insertOne(obj.convertTo[models.Location]);
+                                    case 2 =>
+                                      businessRepo.insertOne(obj.convertTo[models.Business]);
+                                  }
+                                case _ =>
+                                  Future { deserializationError("Array expected for content") }
+                              }
+                              Future.sequence(futures)
                             }
-                            Future.sequence(futures)
+                            case _ =>
+                              Future { deserializationError("Array expected for content") }
                           }
-                          case _ =>
-                            Future { deserializationError("Array expected for content") }
+                          onSuccess(finalFuture) { _ => complete("") }
                         }
-                        onSuccess(finalFuture) { _ => complete("") }
                       }
                     }
                   }
-                }
               })
           }
         }
