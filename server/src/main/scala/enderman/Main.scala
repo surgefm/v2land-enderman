@@ -56,6 +56,8 @@ object Main extends App with EnderRoute {
     fiveMinutesTaskActor,
     FiveMinutesTask.Tick)
 
+  weeklyAnalysisActor ! WeeklyAnalysis.Tick
+
   Await.result(system.whenTerminated, Duration.Inf)
 
 }

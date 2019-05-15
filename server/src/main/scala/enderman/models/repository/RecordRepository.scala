@@ -6,7 +6,7 @@ import com.github.mauricio.async.db.pool.ConnectionPool
 import com.github.mauricio.async.db.postgresql.PostgreSQLConnection
 import org.joda.time.DateTime
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ ExecutionContext, Future }
 
 object RecordRepository {
 
@@ -22,7 +22,8 @@ class RecordRepository(
 
   def findBetweenDate(
     beginDate: Date,
-    endDate: Date = new Date()) = {
+    endDate: Date = new Date()): Future[Seq[RecordRepository.RecordAbstract]] = {
+
     pool.sendPreparedStatement(
       """
         |SELECT "data", "createdAt" FROM record
@@ -31,15 +32,10 @@ class RecordRepository(
         | """.stripMargin,
       List(beginDate, endDate))
       .map { queryResult =>
-        queryResult.rows match {
-          case Some(rows) =>
-            rows.map { rowData =>
-              RecordAbstract(
-                rowData(0).asInstanceOf[String],
-                rowData(1).asInstanceOf[DateTime].toDate)
-            }
-          case None =>
-            List()
+        queryResult.rows.getOrElse(List()).map { rowData =>
+          RecordAbstract(
+            rowData(0).asInstanceOf[String],
+            rowData(1).asInstanceOf[DateTime].toDate)
         }
       }
   }
