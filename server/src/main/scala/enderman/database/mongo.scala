@@ -1,11 +1,9 @@
 package enderman.database
 
-import java.util.Date
-
 import enderman.{ Config, JsonSupport }
 import enderman.models._
-import org.bson.{ BsonReader, BsonType, BsonWriter, json }
-import org.bson.codecs.{ Codec, DecoderContext, DocumentCodec, EncoderContext }
+import org.bson.{ BsonReader, BsonWriter, json }
+import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
 import org.bson.codecs.configuration.CodecRegistries._
 import org.mongodb.scala._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY

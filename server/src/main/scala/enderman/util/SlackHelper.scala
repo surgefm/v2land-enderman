@@ -12,14 +12,14 @@ object SlackHelper extends JsonSupport {
 
   case class SlackWebHookRequest(
     text: String,
-    attachments: List[SlackImageAttachment])
+    attachments: List[SlackAttachment])
 
-  case class SlackImageAttachment(
+  case class SlackAttachment(
     title: String,
-    image_url: String)
+    image_url: Option[String] = None)
 
-  implicit lazy val slackImageAttachmentJsonFormat =
-    jsonFormat2(SlackImageAttachment)
+  implicit lazy val slackAttachmentJsonFormat =
+    jsonFormat2(SlackAttachment)
 
   implicit lazy val slackWebHookRequestJsonFormat =
     jsonFormat2(SlackWebHookRequest)
