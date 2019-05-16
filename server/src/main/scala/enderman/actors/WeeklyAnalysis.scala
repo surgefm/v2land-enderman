@@ -51,7 +51,7 @@ class WeeklyAnalysis extends Actor {
           s"${item._2}（${item._3.toString}）：https://langchao.org/${item._1.toString}"
         )
       }
-    } yield SlackHelper.sendMessage(SlackWebHookRequest("上周用户关注最多事件", msg))
+    } yield SlackHelper.sendMessage(SlackWebHookRequest("用户关注最多事件", msg))
 
     promise onComplete {
       case Success(_) =>
@@ -87,10 +87,25 @@ class WeeklyAnalysis extends Actor {
     }
   }
 
+  def sendMostViewedUrls(): Unit = {
+    val result = for {
+      urls <- enderman.Main.locationRepo.findMostViewedLocations
+      msg = urls.toList.map { item => SlackAttachment(s"${item._1} (${item._2})") }
+    } yield SlackHelper.sendMessage(SlackWebHookRequest("用户访问最多的链接", msg))
+
+    result onComplete {
+      case Success(_) =>
+        log.info("Pushed data to slack")
+      case Failure(e) =>
+        e.printStackTrace()
+    }
+  }
+
   def receive = {
     case Tick =>
-      sendMostSubscribedEvent()
       sendDateRelatedUrl()
+      sendMostSubscribedEvent()
+      sendMostViewedUrls()
   }
 
 }

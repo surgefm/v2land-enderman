@@ -17,7 +17,7 @@ class LocationRepository(
       .head
       .map { _ => location._id.toHexString }
 
-  def findMostViewedLocations: Future[Seq[String]] = {
+  def findMostViewedLocations: Future[Seq[(String, Int)]] = {
     collection.aggregate[Document](List(
       Document(
         "$group" -> Document(
@@ -28,7 +28,9 @@ class LocationRepository(
       .toFuture()
       .map { result =>
         result.slice(0, 3).map { item =>
-          item("_id").toString
+          (
+            item("_id").asString().getValue,
+            item("count").asInt32().getValue)
         }
       }
   }
