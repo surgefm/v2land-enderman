@@ -21,7 +21,7 @@ class WeeklyAnalysis extends Actor {
 
   lazy val log = Logging(system, this)
 
-  def findMostSubscribedEvent(): Future[(Int, String, Long)] = {
+  def findMostSubscribedEvent(): Future[Seq[(Int, String, Long)]] = {
     enderman.database.pg.connectionPool.sendPreparedStatement(
       """
         |SELECT "eventId", name as title, count(subscriber)
@@ -32,12 +32,13 @@ class WeeklyAnalysis extends Actor {
       """.stripMargin
     )
     .map { queryResult =>
-      val first = queryResult.rows.get(0)
-      (
-        first(0).asInstanceOf[Int],
-        first(1).asInstanceOf[String],
-        first(2).asInstanceOf[Long],
-      )
+      queryResult.rows.get.slice(0, 3).map { item =>
+        (
+          item(0).asInstanceOf[Int],
+          item(1).asInstanceOf[String],
+          item(2).asInstanceOf[Long],
+        )
+      }
     }
   }
 
@@ -45,11 +46,12 @@ class WeeklyAnalysis extends Actor {
 
     val promise = for {
       result <- findMostSubscribedEvent()
-      msg = List(
-          SlackAttachment(
-          s"最多用户关注的事件：${result._2}（https://langchao.org/${result._1.toString}）")
-      )
-    } yield SlackHelper.sendMessage(SlackWebHookRequest("每周推送", msg))
+      msg = result.toList.map { item =>
+        SlackAttachment(
+          s"${item._2}（${item._3.toString}）：https://langchao.org/${item._1.toString}"
+        )
+      }
+    } yield SlackHelper.sendMessage(SlackWebHookRequest("上周用户关注最多事件", msg))
 
     promise onComplete {
       case Success(_) =>
