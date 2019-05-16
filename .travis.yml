@@ -8,7 +8,6 @@ before_install:
 jdk:
   - openjdk11
 script:
-  - sbt -jvm-opts travis/jvmopts.compile client/fullOptJS
   - sbt -jvm-opts travis/jvmopts.compile prodServer/test
   - sbt -jvm-opts travis/jvmopts.compile prodServer/docker:publishLocal
 deploy:
