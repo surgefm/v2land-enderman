@@ -3,28 +3,6 @@ import sbtcrossproject.{crossProject, CrossType}
 lazy val akkaHttpVersion = "10.1.1"
 lazy val akkaVersion    = "2.5.12"
 
-lazy val jsResources = taskKey[Seq[File]](
-  "All scalajs generated JS files, including source maps"
-)
-
-lazy val prodJsResources = taskKey[Seq[File]](
-  "All scalajs generated JS files, including source maps"
-)
-
-jsResources := {
-  // this sets up a dependency on fastOptJS. For production, we'd want to run
-  // fullOptJs instead
-  val fastOpt = (fastOptJS in (client, Compile)).value.data
-  val dir = (crossTarget in (client, Compile)).value
-  dir.listFiles.filter(f => f.getName.endsWith(".js") || f.getName.endsWith(".js.map"))
-}
-
-prodJsResources := {
-  val fullOpt = (fullOptJS in (client, Compile)).value.data
-  val dir = (crossTarget in (client, Compile)).value
-  dir.listFiles.filter(f => f.getName.endsWith(".js") || f.getName.endsWith(".js.map"))
-}
-
 lazy val commonSettings = Seq(
   organization := "org.langchao",
   scalaVersion := "2.12.6",
@@ -56,9 +34,6 @@ lazy val testServer = (project in file("build/test"))
   .settings(
     commonSettings,
     mainClass in Compile := Some("enderman.Main"),
-    (resources in Compile) := {
-      (resources in Compile).value ++ (jsResources in LocalRootProject).value
-    },
     dockerBaseImage := "openjdk:11.0.1-jre",
     dockerUpdateLatest := true,
     packageName in Docker := "enderman"
@@ -71,9 +46,6 @@ lazy val prodServer = (project in file("build/prod"))
   .settings(
     commonSettings,
     mainClass in Compile := Some("enderman.Main"),
-    (resources in Compile) := {
-      (resources in Compile).value ++ (prodJsResources in LocalRootProject).value
-    },
     dockerBaseImage := "openjdk:11.0.1-jre",
     dockerUpdateLatest := true,
     packageName in Docker := "enderman"
@@ -81,16 +53,6 @@ lazy val prodServer = (project in file("build/prod"))
   .enablePlugins(DockerPlugin)
   .enablePlugins(AshScriptPlugin)
   .dependsOn(server)
-
-lazy val client = (project in file("client")).settings(
-  commonSettings,
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-  libraryDependencies ++= Seq(
-    "org.scala-js" %%% "scalajs-dom" % "0.9.5",
-    "com.thoughtworks.binding" %%% "dom" % "latest.release"
-  )
-).enablePlugins(ScalaJSPlugin)
-
 
 lazy val shared =
   crossProject(JSPlatform, JVMPlatform)

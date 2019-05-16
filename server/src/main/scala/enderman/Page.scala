@@ -16,21 +16,9 @@ object Page {
       |  <div id="app"></div>
       |  <canvas id="chart-recent7days"></canvas>
       |  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
-      |  <script src="${scriptSrc}"></script>
-      |  <script>
-      |    Main.main()
-      |  </script>
       |</body>
       |</html>
      """.stripMargin
-  }
-
-  def scriptSrc: String = {
-    if (Config.isProduction) {
-      "/public/client-opt.js"
-    } else {
-      "/public/client-fastopt.js"
-    }
   }
 
 }
